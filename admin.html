@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pescado - Painel Admin</title>
+<style>
+  /* ============================================
+     PALETA NEUTRA - trocar quando cliente confirmar cores
+     ============================================ */
+  :root {
+    --bg:        #ffffff;
+    --bg-soft:   #fafafa;
+    --panel:     #ffffff;
+    --border:    #e5e5e5;
+    --border-strong: #d4d4d4;
+    --text:      #111111;
+    --text-soft: #444444;
+    --muted:     #757575;
+    --accent:    #111111;        /* preto - troca pela cor primaria do cliente */
+    --accent-soft: #f2f2f2;
+    --success:   #2d6a4f;
+    --warn:      #b07d00;
+    --danger:    #c0392b;
+  }
+  * { box-sizing:border-box; margin:0; padding:0 }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 24px }
+  .wrap { max-width: 1100px; margin: 0 auto }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em }
+  h2 {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
+  }
+  a { color: var(--accent); text-decoration: none; font-size: 13px }
+  a:hover { text-decoration: underline }
+
+  .grid { display: grid; gap: 14px }
+  .grid-3 { grid-template-columns: repeat(3, 1fr) }
+  .grid-2 { grid-template-columns: repeat(2, 1fr) }
+  @media (max-width: 768px) { .grid-3, .grid-2 { grid-template-columns: 1fr } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+  }
+  .card-stat { text-align: left }
+  .stat-num {
+    font-size: 28px; font-weight: 600; margin: 6px 0; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 500;
+  }
+
+  .bar { background: var(--border); height: 4px; border-radius: 2px; overflow: hidden; margin-top: 10px }
+  .bar-fill { height: 100%; background: var(--success); transition: width 0.3s }
+  .bar-fill.warn { background: var(--warn) }
+  .bar-fill.danger { background: var(--danger) }
+
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .row:last-child { border-bottom: none }
+  .row label {
+    flex: 1; color: var(--text-soft); font-size: 13px; line-height: 1.4;
+  }
+  .row label strong { display: block; color: var(--text); margin-bottom: 2px; font-weight: 600 }
+  .row label small { color: var(--muted); font-size: 11px; font-weight: 400 }
+
+  select, input {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 4px;
+    font: inherit;
+    min-width: 220px;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--accent) }
+
+  button {
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85 }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+  }
+  button.ghost:hover { background: var(--accent-soft); opacity: 1 }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 3px; font-size: 11px;
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .pill.ok      { background: #e8f5e9; color: var(--success) }
+  .pill.warn    { background: #fff8e1; color: var(--warn) }
+  .pill.danger  { background: #fdecea; color: var(--danger) }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor }
+
+  table { width: 100%; border-collapse: collapse }
+  th {
+    text-align: left; padding: 10px 8px;
+    color: var(--muted); font-size: 10px; text-transform: uppercase;
+    font-weight: 600; letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  td {
+    padding: 11px 8px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  tr:last-child td { border-bottom: none }
+  tr:hover td { background: var(--bg-soft) }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--text); color: #ffffff;
+    padding: 11px 18px; border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    font-size: 13px;
+  }
+  .toast.show { opacity: 1 }
+  .toast.error { background: var(--danger) }
+
+  section { margin-bottom: 28px }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Pescado - Painel Admin</h1>
+  <a href="/">Voltar ao sistema</a>
+</header>
+
+<section>
+  <h2>Status do mes</h2>
+  <div class="grid grid-3">
+    <div class="card card-stat">
+      <div class="stat-label">Gasto este mes</div>
+      <div class="stat-num" id="stat-gasto">--</div>
+      <div class="stat-label" id="stat-gasto-pct" style="text-transform:none">--</div>
+      <div class="bar"><div class="bar-fill" id="stat-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card card-stat">
+      <div class="stat-label">Analises com IA</div>
+      <div class="stat-num" id="stat-chamadas">--</div>
+      <div class="stat-label" style="text-transform:none">
+        <span id="stat-haiku">0 Haiku</span> &middot; <span id="stat-sonnet">0 Sonnet</span>
+      </div>
+    </div>
+    <div class="card card-stat">
+      <div class="stat-label">Status IA</div>
+      <div class="stat-num" id="stat-status" style="font-size:18px">--</div>
+      <div class="stat-label" id="stat-status-msg" style="text-transform:none">--</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Configuracao</h2>
+  <div class="card">
+    <div class="row">
+      <label>
+        <strong>Modelo padrao</strong>
+        <small>Usado em todo OCR. Haiku eh ~5x mais barato que Sonnet.</small>
+      </label>
+      <select id="cfg-modelo-padrao"></select>
+      <button onclick="salvarConfig('modelo_padrao', document.getElementById('cfg-modelo-padrao').value)">Salvar</button>
+    </div>
+    <div class="row">
+      <label>
+        <strong>Modelo fallback</strong>
+        <small>Usado quando padrao falhar (confidence baixa, CPF/CNPJ invalido).</small>
+      </label>
+      <select id="cfg-modelo-fallback"></select>
+      <button onclick="salvarConfig('modelo_fallback', document.getElementById('cfg-modelo-fallback').value)">Salvar</button>
+    </div>
+    <div class="row">
+      <label>
+        <strong>Cap mensal (USD)</strong>
+        <small>Ao atingir, sistema corta IA ate virar o mes.</small>
+      </label>
+      <input id="cfg-cap" type="number" step="0.1" min="0.1" max="100">
+      <button onclick="salvarConfig('cap_mensal_usd', Number(document.getElementById('cfg-cap').value))">Salvar</button>
+    </div>
+    <div class="row">
+      <label>
+        <strong>Threshold de fallback</strong>
+        <small>Se confidence menor que X, ativa fallback. Padrao 0.5 (50%).</small>
+      </label>
+      <input id="cfg-threshold" type="number" step="0.05" min="0" max="1">
+      <button onclick="salvarConfig('fallback_threshold', Number(document.getElementById('cfg-threshold').value))">Salvar</button>
+    </div>
+    <div class="row">
+      <label>
+        <strong>Cache de relatorios (dias)</strong>
+        <small>Reusa Serasa/CENPROT do mesmo CPF/CNPJ se menor que X dias.</small>
+      </label>
+      <input id="cfg-cache" type="number" step="1" min="0" max="365">
+      <button onclick="salvarConfig('cache_relatorios_dias', Number(document.getElementById('cfg-cache').value))">Salvar</button>
+    </div>
+    <div class="row">
+      <label>
+        <strong>IA ativa</strong>
+        <small>Switch geral. Desativada = sistema funciona so manual.</small>
+      </label>
+      <select id="cfg-ativa">
+        <option value="true">Ativada</option>
+        <option value="false">Desativada</option>
+      </select>
+      <button onclick="salvarConfig('ia_ativa', document.getElementById('cfg-ativa').value === 'true')">Salvar</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Historico mensal (6 meses)</h2>
+  <div class="card" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th style="padding-left:18px">Mes</th>
+          <th>Gasto USD</th>
+          <th>Chamadas</th>
+          <th>Haiku</th>
+          <th>Sonnet</th>
+          <th>Tokens IN</th>
+          <th style="padding-right:18px">Tokens OUT</th>
+        </tr>
+      </thead>
+      <tbody id="historico-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Historico por cliente</h2>
+  <div class="card">
+    <div class="row" style="border-bottom:none; padding:0 0 14px 0">
+      <input id="busca-cpf" placeholder="CPF (11 digitos) ou CNPJ (14 digitos)" style="flex:1; min-width:0">
+      <button onclick="buscarHistorico()">Buscar</button>
+    </div>
+    <div id="busca-resultado"></div>
+  </div>
+</section>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtUsd = (v) => "US$ " + Number(v || 0).toFixed(4);
+let MODELOS = [];
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.message || d.detalhe || "Erro " + r.status);
+  return d;
+}
+
+function toast(msg, tipo) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast" + (tipo === "error" ? " error" : "") + " show";
+  setTimeout(() => t.className = "toast", 3000);
+}
+
+function nomeModelo(m) {
+  if (m.indexOf("haiku") !== -1) return "Haiku 4.5 (barato)";
+  if (m.indexOf("sonnet-4-5") !== -1) return "Sonnet 4.5 (preciso)";
+  if (m.indexOf("sonnet-4-6") !== -1) return "Sonnet 4.6 (preciso, novo)";
+  if (m.indexOf("opus") !== -1) return "Opus 4.1 (premium, caro)";
+  return m;
+}
+
+async function carregar() {
+  try {
+    const [cfg, cons] = await Promise.all([
+      api("/api/admin/config"),
+      api("/api/admin/consumo"),
+    ]);
+
+    MODELOS = cfg.modelos_disponiveis || [];
+    ["cfg-modelo-padrao", "cfg-modelo-fallback"].forEach(id => {
+      const sel = $(id);
+      sel.innerHTML = "";
+      MODELOS.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = nomeModelo(m);
+        sel.appendChild(opt);
+      });
+    });
+
+    const c = cfg.config || {};
+    if (c.modelo_padrao)                $("cfg-modelo-padrao").value = c.modelo_padrao;
+    if (c.modelo_fallback)              $("cfg-modelo-fallback").value = c.modelo_fallback;
+    if (c.cap_mensal_usd != null)       $("cfg-cap").value = c.cap_mensal_usd;
+    if (c.fallback_threshold != null)   $("cfg-threshold").value = c.fallback_threshold;
+    if (c.cache_relatorios_dias != null)$("cfg-cache").value = c.cache_relatorios_dias;
+    $("cfg-ativa").value = c.ia_ativa === false ? "false" : "true";
+
+    const m = cons.mes_atual;
+    const o = cons.orcamento;
+    const gasto = Number(m.total_usd || 0);
+    const cap = Number(o.cap || 0);
+    const pct = cap > 0 ? (gasto / cap) * 100 : 0;
+
+    $("stat-gasto").textContent = fmtUsd(gasto);
+    $("stat-gasto-pct").textContent = cap ? "de US$ " + cap.toFixed(2) + " (" + pct.toFixed(0) + "%)" : "sem cap";
+    const bar = $("stat-bar");
+    bar.style.width = Math.min(pct, 100) + "%";
+    bar.className = "bar-fill" + (pct >= 100 ? " danger" : pct >= 80 ? " warn" : "");
+
+    $("stat-chamadas").textContent = m.total_chamadas || 0;
+    $("stat-haiku").textContent = (m.total_haiku || 0) + " Haiku";
+    $("stat-sonnet").textContent = (m.total_sonnet || 0) + " Sonnet";
+
+    const stPill = o.ativa
+      ? '<span class="pill ok"><span class="dot"></span>Ativa</span>'
+      : '<span class="pill danger"><span class="dot"></span>Inativa</span>';
+    $("stat-status").innerHTML = stPill;
+    $("stat-status-msg").textContent = o.motivo || "Tudo OK";
+
+    const tb = $("historico-body");
+    tb.innerHTML = "";
+    (cons.historico || []).forEach(h => {
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td style="padding-left:18px">' + h.mes_ano + '</td>' +
+        '<td>' + fmtUsd(h.total_usd) + '</td>' +
+        '<td>' + (h.total_chamadas || 0) + '</td>' +
+        '<td>' + (h.total_haiku || 0) + '</td>' +
+        '<td>' + (h.total_sonnet || 0) + '</td>' +
+        '<td>' + (h.total_tokens_in || 0).toLocaleString('pt-BR') + '</td>' +
+        '<td style="padding-right:18px">' + (h.total_tokens_out || 0).toLocaleString('pt-BR') + '</td>';
+      tb.appendChild(tr);
+    });
+    if ((cons.historico || []).length === 0) {
+      tb.innerHTML = '<tr><td colspan="7" style="padding:20px; text-align:center; color:var(--muted)">Sem historico ainda</td></tr>';
+    }
+  } catch (e) {
+    toast("Erro ao carregar: " + e.message, "error");
+  }
+}
+
+async function salvarConfig(chave, valor) {
+  try {
+    await api("/api/admin/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chave, valor }),
+    });
+    toast("Salvo: " + chave);
+    setTimeout(carregar, 300);
+  } catch (e) {
+    toast("Erro: " + e.message, "error");
+  }
+}
+
+async function buscarHistorico() {
+  const cpf = $("busca-cpf").value;
+  const out = $("busca-resultado");
+  out.innerHTML = '<div style="color:var(--muted); padding:14px 0">Buscando...</div>';
+  try {
+    const r = await api("/api/admin/historico-cliente?cpf_cnpj=" + encodeURIComponent(cpf));
+    if (!r.analises.length) {
+      out.innerHTML = '<div style="color:var(--muted); padding:14px 0">Nenhuma analise encontrada.</div>';
+      return;
+    }
+    let html = '<table><thead><tr>' +
+      '<th>Data</th><th>Nome</th><th>Status</th><th>Risco</th><th>Score</th><th>Valor</th><th>Decisao</th>' +
+      '</tr></thead><tbody>';
+    r.analises.forEach(a => {
+      html += '<tr>' +
+        '<td>' + new Date(a.created_at).toLocaleDateString('pt-BR') + '</td>' +
+        '<td>' + (a.nome || '--') + '</td>' +
+        '<td>' + (a.status || '--') + '</td>' +
+        '<td>' + (a.risco || '--') + '</td>' +
+        '<td>' + (a.score || '--') + '</td>' +
+        '<td>' + (a.valor ? 'R$ ' + Number(a.valor).toLocaleString('pt-BR') : '--') + '</td>' +
+        '<td>' + (a.decisao_final || '--') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    out.innerHTML = html;
+  } catch (e) {
+    out.innerHTML = '<div style="color:var(--danger); padding:14px 0">Erro: ' + e.message + '</div>';
+  }
+}
+
+carregar();
+setInterval(carregar, 30000);
+</script>
+</body>
+</html>
