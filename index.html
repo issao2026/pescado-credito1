@@ -981,6 +981,19 @@ function afterRender() {
  if(D.page==='nova' && _novaStep===1) {
  if(!window.PESCADO_SLA?.inicio) iniciaSLA(); else renderTimerRegressivo();
  } else if(D.page!=='nova') _stopTimer();
+ // PESCADO v4.14 - Re-popular campos do passo 0 a partir de _novaCache (preserva ao voltar)
+ if(D.page==='nova' && _novaStep===0 && _novaCache){
+   setTimeout(function(){
+     var fn = document.getElementById('fn'); if(fn && _novaCache.nome && !fn.value) fn.value = _novaCache.nome;
+     var fc = document.getElementById('fc'); if(fc && _novaCache.cnpj && _novaCache.cnpj !== '—' && !fc.value) fc.value = _novaCache.cnpj;
+     var ft = document.getElementById('ft'); if(ft && _novaCache.tipo) ft.value = _novaCache.tipo;
+     var fv = document.getElementById('fv'); if(fv && _novaCache.vendedor && _novaCache.vendedor !== '—') fv.value = _novaCache.vendedor;
+     var fval = document.getElementById('fval'); if(fval && _novaCache.valor && !fval.value) fval.value = String(_novaCache.valor).replace('.', ',');
+     var fp = document.getElementById('fp'); if(fp && _novaCache.prazo && _novaCache.prazo !== '—') fp.value = _novaCache.prazo;
+     var fe = document.getElementById('fe'); if(fe && _novaCache.est && !fe.value) fe.value = String(_novaCache.est).replace('.', ',');
+     var fo = document.getElementById('fo'); if(fo && _novaCache.obs && !fo.value) fo.value = _novaCache.obs;
+   }, 60);
+ }
  setupDrop();
 }
 
@@ -4284,7 +4297,7 @@ document.querySelectorAll('.mo').forEach(mo => {
  </div>
  <div style="flex:1">${conteudo}</div>
  <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)">
- <button class="btn btn-s" style="font-size:11px;padding:6px 10px;flex:1" onclick="colarRelatorio('${tipo}')"> Colar texto</button>
+ <button class="btn btn-s" style="font-size:11px;padding:6px 10px;flex:1" onclick="colarRelatorio('${tipo}')">Digitar texto</button>
  <button class="btn btn-s" style="font-size:11px;padding:6px 10px;flex:1" onclick="uploadRelatorio('${tipo}')"> Upload PDF</button>
  ${ok?`<button class="btn btn-s" style="font-size:11px;padding:6px 10px" onclick="visualizarDoc('rel_${tipo}', { titulo: '${tipo === 'serasa' ? 'Relatorio Serasa' : 'Relatorio CENPROT'}', dados: PESCADO_RELATORIOS['${tipo}'] })" title="Visualizar">ver</button>`:''}
  ${ok?`<button class="btn btn-s" style="font-size:11px;padding:6px 10px;color:var(--R)" onclick="limparRelatorio('${tipo}')" title="Limpar">x</button>`:''}
@@ -4311,11 +4324,11 @@ document.querySelectorAll('.mo').forEach(mo => {
 
  <div style="background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
  <div style="font-size:11px;color:var(--txt3)">CLIENTE</div>
- <div style="font-weight:700;font-size:13px">${document.getElementById('fn')?.value || '—'}</div>
+ <div style="font-weight:700;font-size:13px">${(_novaCache?.nome) || (document.getElementById('fn')?.value) || '—'}</div>
  <div style="font-size:11px;color:var(--txt3);margin-left:14px">CPF/CNPJ</div>
- <div style="font-family:monospace;font-size:12px">${document.getElementById('fc')?.value || '—'}</div>
+ <div style="font-family:monospace;font-size:12px">${(_novaCache?.cnpj) || (document.getElementById('fc')?.value) || '—'}</div>
  <div style="font-size:11px;color:var(--txt3);margin-left:14px">VALOR</div>
- <div style="font-weight:700;font-size:13px">R$ ${Number(document.getElementById('fval')?.value||0).toLocaleString('pt-BR')}</div>
+ <div style="font-weight:700;font-size:13px">R$ ${Number((_novaCache?.valor) ?? document.getElementById('fval')?.value ?? 0).toLocaleString('pt-BR')}</div>
  </div>
 
  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#1E40AF">
@@ -4324,11 +4337,11 @@ document.querySelectorAll('.mo').forEach(mo => {
 
  ${cards}
 
- ${blockedByDoc ? '<div style="background:#FEE2E2;color:#7F1D1D;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:14px"> ALERTA: CPF/CNPJ do relatorio nao confere com a ficha. Corrija antes de avancar.</div>' : ''}
+ ${blockedByDoc ? '<div style="background:#FEF3C7;color:#92400E;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:14px;border:1px solid #FCD34D">ATENCAO: CPF/CNPJ do relatorio nao bate com a ficha. Voce pode prosseguir, mas a divergencia ficara registrada como inconsistencia no laudo final.</div>' : ''}
 
  <div style="display:flex;gap:8px;justify-content:flex-end">
  <button class="btn btn-s" onclick="_novaStep=0;nav('nova')">← Voltar</button>
- <button class="btn btn-p" ${(podeAvancar && !blockedByDoc) ? '' : 'disabled style="opacity:.45"'} onclick="_novaStep=2;nav('nova')">Proximo: Gerar analise →</button>
+ <button class="btn btn-p" ${podeAvancar ? '' : 'disabled style="opacity:.45"'} onclick="_novaStep=2;nav('nova')">Proximo: Gerar analise →</button>
  </div>
  </div>`;
  }
@@ -4353,7 +4366,7 @@ document.querySelectorAll('.mo').forEach(mo => {
  </div>
 
  <div id="rel-tabs" style="display:flex;gap:4px;border-bottom:2px solid var(--bdr);margin-bottom:14px">
- <button class="rel-tab" data-tab="texto" style="padding:8px 14px;border:none;background:transparent;font-weight:700;font-size:12px;cursor:pointer;border-bottom:2px solid var(--P);color:var(--P);margin-bottom:-2px"> Colar texto</button>
+ <button class="rel-tab" data-tab="texto" style="padding:8px 14px;border:none;background:transparent;font-weight:700;font-size:12px;cursor:pointer;border-bottom:2px solid var(--P);color:var(--P);margin-bottom:-2px">Digitar texto</button>
  <button class="rel-tab" data-tab="imagem" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:var(--txt2)"> Colar imagem (Ctrl+V)</button>
  <button class="rel-tab" data-tab="arquivo" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:var(--txt2)"> Upload arquivo</button>
  </div>
@@ -5740,14 +5753,11 @@ window.imprimirFichaAtual = function(){
   function bindInput(input){
     if (input.dataset._moedaBound === "1") return;
     input.dataset._moedaBound = "1";
-    // Ao perder foco, formata
     input.addEventListener("blur", function(){ formatarInput(input); });
-    // Ao clicar, deixa editar limpo
     input.addEventListener("focus", function(){
       var n = parseBR(input.value);
       if (n !== null) input.value = String(n).replace(".", ",");
     });
-    // Se ja tem valor (carregado do banco/IA), formata logo
     if (input.value) formatarInput(input);
   }
   function scan(){
@@ -5755,8 +5765,7 @@ window.imprimirFichaAtual = function(){
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", scan);
   else scan();
-  setInterval(scan, 1500); // pega inputs renderizados dinamicamente
-  // Helper global pra outros codigos puxarem o numero limpo
+  setInterval(scan, 1500);
   window.pescadoMoedaParse = parseBR;
   window.pescadoMoedaFmt = fmtBR;
 })();
