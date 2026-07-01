@@ -3,17 +3,12 @@
 // Body: { arquivos: [{ nome, mediaType, base64, tipo_esperado? }] }
 //   ou: { texto: "...", tipo_esperado?: "texto_livre" }
 // Resposta: { resultados: [<OCR>], tempo_total_ms, orcamento }
-//
-// Estrategia v3 (hibrida):
-//   1. Verifica orcamento (cap mensal). Se estourado, retorna 402.
-//   2. Tenta Haiku primeiro (barato)
-//   3. Se confidence < threshold OU CPF/CNPJ invalido --> re-tenta com Sonnet
-//   4. Registra custo no Supabase (tabela consumo_ia)
 
 import Anthropic from "@anthropic-ai/sdk";
 import { getOcrPrompt } from "../lib/prompts/ocr-documento.js";
 import { preflight, methodGuard, readJSON, ok, fail, isApiKeyMissing, inferirMediaType } from "../lib/http.js";
 import { getConfig, verificarOrcamento, registrarConsumo, extrairUsage } from "../lib/consumo.js";
+import { validarCPF, validarCNPJ } from "../lib/validacao.js";
 
 export const config = {
   runtime: "nodejs",
@@ -30,12 +25,42 @@ function getClient() {
   return _client;
 }
 
+// PESCADO v4.19 - Anti-alucinacao: valida checksum brasileiro de CPF/CNPJ
+// Se a IA extraiu mas nao passa no checksum, zera (operador digita manual)
+function saneadorChecksum(dados) {
+  if (!dados || typeof dados !== "object") return dados;
+  let obs = dados.observacoes_leitura || "";
+  const camposCPF = ["cpf", "cpf_socio"];
+  for (const k of camposCPF) {
+    if (dados[k] && typeof dados[k] === "string" && dados[k].trim() !== "") {
+      if (!validarCPF(dados[k])) {
+        obs += (obs ? " | " : "") + "CPF descartado por checksum invalido (" + dados[k] + ") - digite manual";
+        dados[k] = "";
+      }
+    }
+  }
+  if (dados.cnpj && typeof dados.cnpj === "string" && dados.cnpj.trim() !== "") {
+    if (!validarCNPJ(dados.cnpj)) {
+      obs += (obs ? " | " : "") + "CNPJ descartado por checksum invalido (" + dados.cnpj + ") - digite manual";
+      dados.cnpj = "";
+    }
+  }
+  if (Array.isArray(dados.socios)) {
+    dados.socios.forEach((s) => {
+      if (s && s.cpf && !validarCPF(s.cpf)) { s.cpf = ""; }
+    });
+  }
+  dados.observacoes_leitura = obs;
+  return dados;
+}
+
 function extrairJSON(texto) {
   if (!texto) throw new Error("resposta vazia");
   const m = texto.match(/\{[\s\S]*\}/);
   if (!m) throw new Error("nenhum JSON na resposta: " + texto.slice(0, 200));
   try {
-    return JSON.parse(m[0]);
+    const parsed = JSON.parse(m[0]);
+    return saneadorChecksum(parsed);
   } catch (e) {
     throw new Error("JSON invalido: " + e.message + " | raw: " + m[0].slice(0, 200));
   }
