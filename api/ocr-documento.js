@@ -45,6 +45,17 @@ function saneadorChecksum(dados) {
       dados.cnpj = "";
     }
   }
+  // Campo unificado cpf_cnpj (usado em texto_livre): decide por tamanho de digitos
+  if (dados.cpf_cnpj && typeof dados.cpf_cnpj === "string" && dados.cpf_cnpj.trim() !== "") {
+    const digitos = String(dados.cpf_cnpj).replace(/\D/g, "");
+    let ok = true;
+    if (digitos.length === 11) ok = validarCPF(digitos);
+    else if (digitos.length === 14) ok = validarCNPJ(digitos);
+    if (!ok) {
+      obs += (obs ? " | " : "") + "CPF/CNPJ descartado por checksum invalido (" + dados.cpf_cnpj + ") - digite manual";
+      dados.cpf_cnpj = "";
+    }
+  }
   if (Array.isArray(dados.socios)) {
     dados.socios.forEach((s) => {
       if (s && s.cpf && !validarCPF(s.cpf)) { s.cpf = ""; }
