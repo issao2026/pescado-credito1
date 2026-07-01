@@ -787,6 +787,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <div class="mo-title" id="mo-title">—</div>
  <div class="mo-sub" id="mo-sub">—</div>
  </div>
+ <button class="btn btn-s btn-sm" style="background:#191824;color:#fff;border-color:#191824" onclick="pescadoAssistenteAbrir()">Assistente IA</button>
  <button class="btn btn-ghost btn-sm" onclick="closeMo('mo-analise')"> Fechar</button>
  </div>
  <div class="mo-body" id="mo-body"></div>
@@ -5768,6 +5769,189 @@ window.imprimirFichaAtual = function(){
   setInterval(scan, 1500);
   window.pescadoMoedaParse = parseBR;
   window.pescadoMoedaFmt = fmtBR;
+})();
+
+// PESCADO v4.17 - Assistente IA da ficha aberta
+(function PescadoAssistente(){
+  var LS_MODELO = "pescado_assist_modelo";
+  var LS_APIKEY = "pescado_assist_apikey";
+  var LS_HIST = "pescado_assist_hist";
+
+  var MODELOS = [
+    { id: "claude-haiku-4-5-20251001",  nome: "Haiku 4.5 (rapido/barato)" },
+    { id: "claude-sonnet-4-5-20250929", nome: "Sonnet 4.5 (equilibrado)" },
+    { id: "claude-opus-4-1-20250805",   nome: "Opus 4.1 (mais preciso)" }
+  ];
+
+  function getModelo(){ return localStorage.getItem(LS_MODELO) || MODELOS[0].id; }
+  function setModelo(m){ localStorage.setItem(LS_MODELO, m); }
+  function getApiKey(){ return localStorage.getItem(LS_APIKEY) || ""; }
+  function setApiKey(k){ if (k) localStorage.setItem(LS_APIKEY, k); else localStorage.removeItem(LS_APIKEY); }
+  function getHist(){ try { return JSON.parse(localStorage.getItem(LS_HIST) || "[]"); } catch(e){ return []; } }
+  function setHist(h){ localStorage.setItem(LS_HIST, JSON.stringify(h.slice(-30))); }
+
+  function contextoFicha(){
+    try {
+      var id = window._curAnaliseId;
+      if (!id) return null;
+      var lista = (window.D && window.D.analyses) || [];
+      var a = lista.find(function(x){ return x.id === id || String(x.id) === String(id); });
+      if (!a) return null;
+      var alerts = (a.alerts && a.alerts.length) ? a.alerts.join("; ") : "nenhum";
+      var docs = (a.docs && a.docs.length) ? a.docs.map(function(d){ return d.n + " (" + d.cf + "% confianca)"; }).join("; ") : "nenhum";
+      return [
+        "FICHA ATUAL:",
+        "- Cliente: " + (a.nome || "--") + " (" + (a.tipo || "--") + ")",
+        "- CPF/CNPJ: " + (a.cnpj || "--"),
+        "- Valor pretendido: R$ " + (a.valor || 0).toLocaleString("pt-BR"),
+        "- Prazo: " + (a.prazo || "--"),
+        "- Score: " + (a.score || "sem score") + " | Risco: " + (a.risco || "--"),
+        "- Status: " + (a.status || "--"),
+        "- Restricoes Serasa: " + (a.rest !== null ? a.rest : "--"),
+        "- Protestos CENPROT: " + (a.prot !== null ? a.prot : "--"),
+        "- Documentos: " + docs,
+        "- Alertas: " + alerts,
+        "- Recomendacao IA: " + (a.recIA || "--"),
+        "- Decisao final: " + (a.final || "pendente") + (a.justificativa ? " (justificativa: " + a.justificativa + ")" : ""),
+        "- Vendedor: " + (a.vendedor || "--")
+      ].join("\n");
+    } catch(e){ return null; }
+  }
+
+  var SUGESTOES = [
+    "Analise essa ficha e me diga se deveria aprovar",
+    "Qual limite de credito voce recomenda? Justifique",
+    "Existe algum sinal de alerta que eu nao esteja vendo?",
+    "Que ressalvas eu deveria incluir na aprovacao?"
+  ];
+
+  function montarModal(){
+    if (document.getElementById("pescado-assist")) return;
+    var m = document.createElement("div");
+    m.id = "pescado-assist";
+    m.style.cssText = "position:fixed;top:0;right:0;bottom:0;width:440px;max-width:100vw;background:#fff;box-shadow:-6px 0 24px rgba(0,0,0,.15);z-index:99998;display:flex;flex-direction:column;font-family:Inter,sans-serif;border-left:1px solid #E8E5DE";
+    var opts = MODELOS.map(function(o){ return '<option value="' + o.id + '"' + (o.id === getModelo() ? " selected" : "") + '>' + o.nome + '</option>'; }).join("");
+    m.innerHTML = ''
+      + '<div style="padding:14px 16px;border-bottom:1px solid #E8E5DE;background:#F9F8F5">'
+      +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      +     '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:15px;color:#191824">Assistente IA</div>'
+      +     '<button id="pa-cfg" title="Configurar chave API" style="background:transparent;border:1px solid #D6D2CB;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer;color:#666">config</button>'
+      +     '<button id="pa-x" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#666;line-height:1;padding:0 4px">×</button>'
+      +   '</div>'
+      +   '<div style="display:flex;gap:6px;align-items:center">'
+      +     '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em">Modelo</span>'
+      +     '<select id="pa-modelo" style="flex:1;padding:4px 8px;border:1px solid #D6D2CB;border-radius:5px;font-size:11.5px;font-family:Inter,sans-serif">' + opts + '</select>'
+      +   '</div>'
+      +   '<div id="pa-cfg-box" style="display:none;margin-top:8px;padding:8px;background:#fff;border:1px solid #E8E5DE;border-radius:6px">'
+      +     '<div style="font-size:11px;color:#555;margin-bottom:4px">Chave Anthropic propria (opcional, fica so nesse browser):</div>'
+      +     '<input id="pa-apikey" type="password" placeholder="sk-ant-api03-..." style="width:100%;padding:5px 8px;border:1px solid #D6D2CB;border-radius:5px;font-size:11px;box-sizing:border-box" />'
+      +     '<div style="font-size:10px;color:#888;margin-top:4px">Se vazio, usa a chave do sistema.</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div id="pa-msgs" style="flex:1;overflow-y:auto;padding:14px 16px;background:#FAFAF8"></div>'
+      + '<div id="pa-sug" style="padding:8px 12px;border-top:1px solid #E8E5DE;background:#fff;display:flex;flex-wrap:wrap;gap:6px"></div>'
+      + '<div style="padding:10px 12px;border-top:1px solid #E8E5DE;background:#fff;display:flex;gap:8px">'
+      +   '<textarea id="pa-inp" placeholder="Pergunte algo sobre essa ficha..." rows="2" style="flex:1;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:12.5px;font-family:Inter,sans-serif;resize:none"></textarea>'
+      +   '<button id="pa-send" style="background:#191824;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;font-family:Inter,sans-serif">Enviar</button>'
+      + '</div>';
+    document.body.appendChild(m);
+
+    document.getElementById("pa-x").onclick = function(){ m.remove(); };
+    document.getElementById("pa-modelo").onchange = function(e){ setModelo(e.target.value); };
+    document.getElementById("pa-cfg").onclick = function(){
+      var box = document.getElementById("pa-cfg-box");
+      box.style.display = box.style.display === "none" ? "block" : "none";
+      var inp = document.getElementById("pa-apikey");
+      inp.value = getApiKey();
+      inp.onchange = function(e){ setApiKey(e.target.value.trim()); };
+    };
+    document.getElementById("pa-send").onclick = enviar;
+    document.getElementById("pa-inp").onkeydown = function(e){
+      if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); enviar(); }
+    };
+
+    // Sugestoes
+    var sug = document.getElementById("pa-sug");
+    SUGESTOES.forEach(function(s){
+      var b = document.createElement("button");
+      b.textContent = s;
+      b.style.cssText = "background:#fff;border:1px solid #D6D2CB;border-radius:14px;padding:5px 10px;font-size:11px;cursor:pointer;color:#2E2B3A;font-family:Inter,sans-serif";
+      b.onclick = function(){ document.getElementById("pa-inp").value = s; enviar(); };
+      sug.appendChild(b);
+    });
+
+    // Historico
+    var hist = getHist();
+    if (hist.length === 0){
+      addMsg("assistant", "Ola. Sou o assistente da ficha aberta. Ja recebi o contexto (score, docs, alertas, decisao). Pergunte o que quiser sobre a analise.");
+    } else {
+      hist.forEach(function(msg){ addMsg(msg.role, msg.content, true); });
+    }
+  }
+
+  function addMsg(role, content, skipStore){
+    var box = document.getElementById("pa-msgs");
+    if (!box) return;
+    var div = document.createElement("div");
+    var isUser = role === "user";
+    div.style.cssText = "margin-bottom:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;line-height:1.45;font-family:Inter,sans-serif;white-space:pre-wrap;" + (isUser ? "background:#191824;color:#fff;margin-left:24px" : "background:#fff;color:#191824;border:1px solid #E8E5DE;margin-right:24px");
+    div.textContent = content;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    if (!skipStore){
+      var hist = getHist();
+      hist.push({ role: role, content: content });
+      setHist(hist);
+    }
+  }
+
+  async function enviar(){
+    var inp = document.getElementById("pa-inp");
+    var txt = (inp.value || "").trim();
+    if (!txt) return;
+    inp.value = "";
+    addMsg("user", txt);
+
+    var thinking = document.createElement("div");
+    thinking.id = "pa-thinking";
+    thinking.textContent = "pensando...";
+    thinking.style.cssText = "margin-bottom:10px;padding:9px 12px;font-size:11.5px;color:#888;font-style:italic;font-family:Inter,sans-serif";
+    document.getElementById("pa-msgs").appendChild(thinking);
+
+    try {
+      var ctx = contextoFicha();
+      var hist = getHist();
+      var msgsPayload = hist.slice(-10).map(function(m){ return { role: m.role, content: m.content }; });
+      if (ctx){
+        msgsPayload.unshift({ role: "user", content: ctx + "\n\nPergunta do operador: " + (msgsPayload.length ? msgsPayload[msgsPayload.length-1].content : txt) });
+        if (msgsPayload.length > 1) msgsPayload.pop();
+      }
+
+      var body = { mensagens: msgsPayload, modelo: getModelo() };
+      var apiKey = getApiKey();
+      var headers = { "Content-Type": "application/json" };
+      if (apiKey) headers["x-anthropic-key"] = apiKey; // backend pode ler se quiser suportar
+
+      var r = await fetch("/api/chat", { method: "POST", headers: headers, body: JSON.stringify(body) });
+      var j = await r.json();
+      thinking.remove();
+      if (j.erro){
+        addMsg("assistant", "Erro: " + (j.detalhe || j.erro));
+      } else {
+        addMsg("assistant", j.resposta || "(sem resposta)");
+      }
+    } catch(e){
+      var t = document.getElementById("pa-thinking");
+      if (t) t.remove();
+      addMsg("assistant", "Erro ao chamar IA: " + e.message);
+    }
+  }
+
+  window.pescadoAssistenteAbrir = function(){
+    var existente = document.getElementById("pescado-assist");
+    if (existente){ existente.remove(); return; }
+    montarModal();
+  };
 })();
 </script>
 </body>
