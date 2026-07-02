@@ -1571,12 +1571,12 @@ Vendedor: Carlos Menezes" style="min-height:160px;resize:vertical;width:100%;fon
  <select id="fv"><option>Carlos Menezes</option><option>Mariana Costa</option><option>Ricardo Fonseca</option></select>
  </div>
  <div class="fg"><label>Operador da análise</label>
- <select id="fop"><option>Elvis</option></select>
+ <select id="fop"><option>Francisco Elves C.</option></select>
  </div>
  <div class="fg"><label>Valor solicitado (R$) *</label><input id="fval" type="text" inputmode="decimal" data-moeda="1" placeholder="Ex: 10.000,00"></div>
  <div class="fg"><label>Prazo solicitado</label>
  <select id="fp">
- <option>30 dias</option><option>30/60 dias</option><option>30/60/90 dias</option><option>60 dias</option><option>60/90 dias</option>
+ <option>A vista</option><option>7 dias</option><option>14 dias</option><option>21 dias</option><option>28 dias</option><option>35 dias</option><option>7/14</option><option>14/21</option><option>21/28</option><option>14/21/28</option>
  </select>
  </div>
  <div class="fg"><label>Compra estimada mensal (R$)</label><input id="fe" type="text" inputmode="decimal" data-moeda="1" placeholder="Ex: 5.000,00"></div>
@@ -2148,7 +2148,7 @@ function _pgNovaStep2() {
  </div>
  <div class="fg"><label>Prazo recomendado</label>
  <select id="rep-prazo" style="max-width:220px">
- <option>30 dias</option><option>30/60 dias</option><option>30/60/90 dias</option><option>60 dias</option><option>60/90 dias</option>
+ <option>A vista</option><option>7 dias</option><option>14 dias</option><option>21 dias</option><option>28 dias</option><option>35 dias</option><option>7/14</option><option>14/21</option><option>21/28</option><option>14/21/28</option>
  </select>
  </div>
  </div>
@@ -2164,11 +2164,15 @@ function _pgNovaStep2() {
  <div class="alert al-i mb16" style="margin-bottom:16px"><span></span>
  <div style="font-size:12px"><b>A decisão final é sempre humana.</b> A IA organiza os dados e identifica riscos, mas a aprovação ou rejeição é de responsabilidade do analista.</div>
  </div>
- <div style="display:flex;gap:10px;margin-bottom:16px" id="aprov-btns">
+ <div style="display:flex;gap:10px;margin-bottom:10px" id="aprov-btns">
  <button class="aprov-btn" id="ap-g" onclick="setAprov('aprovado')" style="background:var(--GB);color:var(--GT);border-color:var(--G)"> Aprovar</button>
  <button class="aprov-btn" id="ap-c" onclick="setAprov('condicional')" style="background:var(--YB);color:var(--YT);border-color:var(--Y)">️ Aprovar com condições</button>
  <button class="aprov-btn" id="ap-m" onclick="setAprov('mais_docs')" style="background:var(--PB);color:var(--PT);border-color:var(--P)"> Pedir mais docs</button>
- <button class="aprov-btn" id="ap-r" onclick="setAprov('reprovado')" style="background:var(--RB);color:var(--RT);border-color:var(--R)"> Reprovar</button>
+ <button class="aprov-btn" id="ap-r" onclick="setAprov('reprovado')" style="background:var(--RB);color:var(--RT);border-color:var(--R)"> Reprovar / A vista</button>
+ </div>
+ <div style="display:flex;gap:10px;margin-bottom:16px">
+ <button onclick="gerarEmailRetorno('aprovado')" style="flex:1;background:#0A3332;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer">Gerar email — Aprovado</button>
+ <button onclick="gerarEmailRetorno('a_vista')" style="flex:1;background:#7c2d12;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer">Gerar email — Somente à vista</button>
  </div>
  <div id="aprov-cond" style="display:none">
  <div class="fg"><label>Condicionantes / motivo da decisão *</label>
@@ -4848,7 +4852,7 @@ window.imprimirFichaAtual = function(){
   const corDec = (a.final||"").toLowerCase().indexOf("aprovad")>=0 ? "dec-ok" : (a.final||"").toLowerCase().indexOf("reprov")>=0 ? "dec-no" : "dec-warn";
   let body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha - ' + (a.nome||"") + '</title>' + css + '</head><body>';
   body += '<div class="head"><div><h1>Pescado Credito</h1><div style="font-size:11px;color:#6b7280">Ficha de analise de credito</div></div>';
-  body += '<div class="meta">Ficha #' + a.id + '<br>Data: ' + (a.dt||"--") + '<br>Operador: ' + (a.resp||"Elves Silva") + '</div></div>';
+  body += '<div class="meta">Ficha #' + a.id + '<br>Data: ' + (a.dt||"--") + '<br>Operador: ' + (a.resp||"Francisco Elves C.") + '</div></div>';
   body += '<h2>Cliente</h2><table>';
   body += '<tr><td class="lbl">Nome / Razao Social</td><td><b>' + (a.nome||"--") + '</b></td></tr>';
   body += '<tr><td class="lbl">CPF / CNPJ</td><td style="font-family:monospace">' + (a.cnpj||"--") + '</td></tr>';
@@ -4879,7 +4883,7 @@ window.imprimirFichaAtual = function(){
   if(a.est){
     body += '<table style="margin-top:14px"><tr><td class="lbl">Limite sugerido</td><td><b>' + valor(a.est) + '</b></td></tr></table>';
   }
-  body += '<div class="assina"><div class="linha">Operador<br><span style="color:#111;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600;margin-top:4px;display:inline-block">' + (a.resp||"Elves Silva") + '</span></div>';
+  body += '<div class="assina"><div class="linha">Operador<br><span style="color:#111;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600;margin-top:4px;display:inline-block">' + (a.resp||"Francisco Elves C.") + '</span></div>';
   body += '<div class="linha">Aprovacao gerencial</div></div>';
   body += '<div style="margin-top:30px;text-align:center;font-size:9px;color:#9ca3af">Documento gerado em ' + new Date().toLocaleString("pt-BR") + ' · Pescado Credito</div>';
   body += '<script>window.onload=()=>{setTimeout(()=>window.print(),300)}<' + '/script></body></html>';
@@ -5930,20 +5934,23 @@ window.imprimirFichaAtual = function(){
       var hist = getHist();
       var msgsPayload = hist.slice(-10).map(function(m){ return { role: m.role, content: m.content }; });
       if (ctx){
-        msgsPayload.unshift({ role: "user", content: ctx + "\n\nPergunta do operador: " + (msgsPayload.length ? msgsPayload[msgsPayload.length-1].content : txt) });
-        if (msgsPayload.length > 1) msgsPayload.pop();
+        var novo = ctx + "\n\nPergunta do operador: " + txt;
+        if (msgsPayload.length) {
+          msgsPayload[msgsPayload.length - 1] = { role: "user", content: novo };
+        } else {
+          msgsPayload.push({ role: "user", content: novo });
+        }
       }
-
-      var body = { mensagens: msgsPayload, modelo: getModelo() };
-      var apiKey = getApiKey();
-      var headers = { "Content-Type": "application/json" };
-      if (apiKey) headers["x-anthropic-key"] = apiKey; // backend pode ler se quiser suportar
-
-      var r = await fetch("/api/chat", { method: "POST", headers: headers, body: JSON.stringify(body) });
+      var modelo = document.getElementById("pa-modelo") ? document.getElementById("pa-modelo").value : "claude-haiku-4-5-20251001";
+      var keyExtra = document.getElementById("pa-key") ? document.getElementById("pa-key").value.trim() : "";
+      var body = { messages: msgsPayload, modelo: modelo };
+      if (keyExtra) body.api_key_override = keyExtra;
+      var r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       var j = await r.json();
-      thinking.remove();
-      if (j.erro){
-        addMsg("assistant", "Erro: " + (j.detalhe || j.erro));
+      var t = document.getElementById("pa-thinking");
+      if (t) t.remove();
+      if (!r.ok) {
+        addMsg("assistant", "Erro: " + (j.detalhe || j.erro || "falha"));
       } else {
         addMsg("assistant", j.resposta || "(sem resposta)");
       }
@@ -5954,12 +5961,78 @@ window.imprimirFichaAtual = function(){
     }
   }
 
-  window.pescadoAssistenteAbrir = function(){
-    var existente = document.getElementById("pescado-assist");
-    if (existente){ existente.remove(); return; }
-    montarModal();
-  };
+  document.addEventListener("DOMContentLoaded", montarPainel);
+  if (document.readyState !== "loading") montarPainel();
 })();
+
+// ============================================================
+// v4.22 - GERAR EMAIL DE RETORNO (Francisco Elves C.)
+// ============================================================
+window.gerarEmailRetorno = function(tipo){
+  try {
+    var a = (typeof state !== "undefined" && state && state.openA) ? state.openA : null;
+    var cnpj = (a && (a.cnpj || a.cpf_cnpj)) || document.getElementById("fc")?.value || "";
+    var nome = (a && (a.nome || a.razao_social)) || document.getElementById("fn")?.value || "";
+    var score = (a && a.score) || document.getElementById("rep-score")?.value || "";
+    var limite = document.getElementById("rep-limite")?.value || (a && a.valor) || "";
+    var prazo = document.getElementById("rep-prazo")?.value || (a && a.prazo) || "14 dias";
+
+    var perfil = "satisfatório";
+    var s = parseInt(String(score).replace(/\D/g,"")) || 0;
+    if (s > 700) perfil = "excelente";
+    else if (s >= 501) perfil = "satisfatório";
+    else perfil = "abaixo do parametro";
+
+    var corpo = "";
+    var assunto = "";
+    if (tipo === "aprovado") {
+      assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
+      corpo = "Prezado(s),\n\n" +
+        "Após análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas.\n\n" +
+        "Dessa forma, aprovamos as seguintes condições comerciais:\n\n" +
+        "Limite de crédito: " + (limite || "R$ ______") + "\n" +
+        "Prazo de pagamento: " + (prazo || "14 dias") + "\n\n" +
+        "As condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\n" +
+        "Permanecemos à disposição para quaisquer esclarecimentos.\n\n" +
+        "Atenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+    } else {
+      assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
+      corpo = "Prezado,\n\n" +
+        "Após análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito.\n\n" +
+        "Dessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\n" +
+        "Contudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\n" +
+        "Permanecemos à disposição para quaisquer esclarecimentos.\n\n" +
+        "Atenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+    }
+
+    // Modal
+    var old = document.getElementById("email-modal");
+    if (old) old.remove();
+    var ov = document.createElement("div");
+    ov.id = "email-modal";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(10,51,50,.85);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;padding:20px";
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:26px 28px;max-width:640px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:17px;color:#0A3332">Email de retorno — ' + (tipo === "aprovado" ? "Aprovado" : "Somente à vista") + '</div>' +
+          '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666">×</button>' +
+        '</div>' +
+        '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Assunto</label>' +
+        '<input id="em-assunto" value="' + assunto.replace(/"/g,"&quot;") + '" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:Inter,sans-serif;box-sizing:border-box">' +
+        '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Corpo</label>' +
+        '<textarea id="em-corpo" style="width:100%;min-height:320px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>' +
+        '<div style="display:flex;gap:8px;margin-top:14px">' +
+          '<button onclick="(function(){var t=document.getElementById(\'em-corpo\').value;navigator.clipboard.writeText(t);var b=event.target;b.textContent=\'Copiado\';setTimeout(function(){b.textContent=\'Copiar texto\'},1500)})()" style="flex:1;background:#15746E;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">Copiar texto</button>' +
+          '<button onclick="(function(){var a=document.getElementById(\'em-assunto\').value;var c=document.getElementById(\'em-corpo\').value;window.location.href=\'mailto:?subject=\'+encodeURIComponent(a)+\'&body=\'+encodeURIComponent(c)})()" style="flex:1;background:#0A3332;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">Abrir no email</button>' +
+          '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+  } catch(e){
+    alert("Erro ao gerar email: " + e.message);
+  }
+};
+
 </script>
 </body>
 </html>
