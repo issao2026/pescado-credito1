@@ -225,5 +225,7 @@ function toFrontend(row) {
     est:       d.est         ?? 0,
     docSt:     d.docSt       ?? "Pendente",
     analise_ia: d.analise_ia ?? null,
+    // v4.27: expor `dados` completo pra frontend acessar email_vendedor, email_retorno, origem, etc
+    dados:     d,
   };
 }
