@@ -193,9 +193,15 @@
       // v4.39b: "Filtro ativo" e "label:" maiores
       breadcrumb = '<div style="background:#003030;color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-family:Poppins,sans-serif;font-size:15px;color:#B8DDD9;text-transform:uppercase;font-weight:800;letter-spacing:.08em">Filtro ativo:</span>';
       chipsAtivos.forEach(c=>{
+        // v4.40: click no valor abre modal drill (lista clientes daquele vendedor/risco/etc)
+        var actionOnClick = '';
+        if (c.campo === 'vendedor') actionOnClick = 'verComposicaoKPI(\'vendedores\')';
+        else if (c.campo === 'saida') actionOnClick = 'verComposicaoKPI(\'total\')';
+        else if (c.campo === 'risco') actionOnClick = 'verComposicaoKPI(\'score\')';
+        else actionOnClick = 'var el=document.getElementById(\'bi-clientes-lista\'); if(el){el.scrollIntoView({behavior:\'smooth\'});}';
         breadcrumb += '<span style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:16px;display:inline-flex;align-items:center;gap:12px">'
           + '<span style="font-family:Poppins,sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:14px;font-weight:700;color:#B8DDD9">' + c.label + ':</span>'
-          + '<b style="font-family:Poppins,sans-serif;font-size:18px;font-weight:800;letter-spacing:-.01em;color:#fff">' + c.valor + '</b>'
+          + '<b onclick="' + actionOnClick + '" style="font-family:Poppins,sans-serif;font-size:18px;font-weight:800;letter-spacing:-.01em;color:#fff;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(255,255,255,.3);text-underline-offset:3px" title="Clique para ver os clientes">' + c.valor + '</b>'
           + '<span onclick="window._BI_LAG_FILTERS.' + c.campo + '=\'\';render()" style="cursor:pointer;background:rgba(255,255,255,.22);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700" title="Remover filtro">×</span>'
           + '</span>';
       });
