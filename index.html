@@ -2688,6 +2688,76 @@ function fmtDoc(inp) {
  let v = inp.value.replace(/\D/g,'');
  if(v.length<=11) inp.value=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
  else inp.value=v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+ // v4.32: auto-troca tipo + auto-fill CNPJ via BrasilAPI
+ var digitos = v.length;
+ var ft = document.getElementById('ft');
+ if (digitos === 11 && ft) ft.value = 'PF';
+ if (digitos === 14){
+   if (ft) ft.value = 'PJ';
+   if (window._validarCNPJnova && window._validarCNPJnova(v)){
+     if (!window._autoFillNovaFeito || window._autoFillCnpjUltimo !== v){
+       window._autoFillNovaFeito = true;
+       window._autoFillCnpjUltimo = v;
+       autoPreencherCNPJNova(v);
+     }
+   }
+ }
+ if (digitos < 14) { window._autoFillNovaFeito = false; }
+}
+
+// Validador CNPJ pra Nova Analise
+window._validarCNPJnova = function(cnpj){
+  cnpj = String(cnpj).replace(/\D/g,'');
+  if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+  var p1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+  var p2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+  var s = 0;
+  for (var i = 0; i < 12; i++) s += parseInt(cnpj[i]) * p1[i];
+  var d1 = s % 11 < 2 ? 0 : 11 - (s % 11);
+  if (d1 !== parseInt(cnpj[12])) return false;
+  s = 0;
+  for (var i = 0; i < 13; i++) s += parseInt(cnpj[i]) * p2[i];
+  var d2 = s % 11 < 2 ? 0 : 11 - (s % 11);
+  return d2 === parseInt(cnpj[13]);
+};
+
+async function autoPreencherCNPJNova(cnpj){
+  var fn = document.getElementById('fn');
+  if (!fn) return;
+  // avisar visualmente
+  var placeholderOld = fn.placeholder;
+  if (!fn.value) fn.placeholder = "Buscando na Receita...";
+  try {
+    var r = await fetch("https://brasilapi.com.br/api/cnpj/v1/" + cnpj);
+    if (!r.ok){
+      fn.placeholder = placeholderOld;
+      if (window.toast) toast("CNPJ valido, mas nao localizado na Receita");
+      return;
+    }
+    var j = await r.json();
+    var razao = j.razao_social || j.nome_fantasia || "";
+    if (razao && !fn.value){
+      fn.value = razao;
+    }
+    var fo = document.getElementById('fo');
+    var obsAtual = fo?.value?.trim() || "";
+    var info = [];
+    if (j.razao_social) info.push("Razao: " + j.razao_social);
+    if (j.nome_fantasia) info.push("Fantasia: " + j.nome_fantasia);
+    if (j.data_inicio_atividade) info.push("Fundacao: " + j.data_inicio_atividade);
+    if (j.capital_social) info.push("Capital: R$ " + Number(j.capital_social).toLocaleString("pt-BR"));
+    if (j.municipio && j.uf) info.push("Cidade: " + j.municipio + "/" + j.uf);
+    if (j.descricao_situacao_cadastral) info.push("Situacao: " + j.descricao_situacao_cadastral);
+    if (j.cnae_fiscal_descricao) info.push("Atividade: " + j.cnae_fiscal_descricao);
+    if (fo && info.length && !obsAtual.includes("Razao:")){
+      fo.value = (obsAtual ? obsAtual + "\n\n" : "") + "--- Dados Receita ---\n" + info.join("\n");
+    }
+    fn.placeholder = placeholderOld;
+    if (window.toast) toast("Dados da Receita preenchidos");
+  } catch(e){
+    fn.placeholder = placeholderOld;
+    if (window.toast) toast("BrasilAPI indisponivel");
+  }
 }
 
 function _goStep1() {
