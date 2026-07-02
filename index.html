@@ -44,7 +44,7 @@ a { text-decoration:none; color:inherit; }
 
 /* ── LAYOUT ─────────────────────────────────── */
 #wrap { display:flex; min-height:100vh; }
-#sb { width:220px; min-width:220px; background:linear-gradient(180deg, #0C1428 0%, #111D35 60%, #162040 100%); display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; border-radius:0 20px 20px 0; box-shadow:4px 0 24px rgba(6,14,31,.18); }
+#sb { width:220px; min-width:220px; background:linear-gradient(180deg, #0A3332 0%, #15746E 100%); display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; border-radius:0 20px 20px 0; box-shadow:4px 0 24px rgba(10,51,50,.24); }
 #main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
 
 /* ── SIDEBAR ─────────────────────────────────── */
@@ -670,6 +670,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <div class="ni on" onclick="nav('dashboard')"><span class="ic">◼</span> Dashboard</div>
  <div class="ni" onclick="nav('fila')"><span class="ic">≡</span> Fila Operacional <span class="ct" id="ct-fila">0</span></div>
  <div class="ni" onclick="nav('nova')"><span class="ic">+</span> Nova Análise</div>
+ <div class="ni" onclick="nav('bi_lagostao')"><span class="ic">⌗</span> Análise Comercial</div>
  </div>
  <div class="nav-grp">
  <div class="nav-grp-lbl">Configuração</div>
@@ -973,7 +974,7 @@ function justif(a) {
 // ══════════════════════════════════════
 // NAV
 // ══════════════════════════════════════
-const titles = {dashboard:'Dashboard',fila:'Fila Operacional',nova:'Nova Análise',politica:'Política de Crédito',relatorios:'Relatórios',laudo:'Laudo Final'};
+const titles = {dashboard:'Dashboard',fila:'Fila Operacional',nova:'Nova Análise',politica:'Política de Crédito',relatorios:'Relatórios',laudo:'Laudo Final',bi_lagostao:'Análise Comercial · Lagostão Pescados'};
 function nav(p) {
  D.page=p;
  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
@@ -984,7 +985,7 @@ function nav(p) {
  window.scrollTo(0,0);
 }
 function render() {
- const fns = {dashboard:pgDash,fila:pgFila,nova:pgNova,politica:pgPolitica,relatorios:pgRelatorios,laudo:pgLaudo};
+ const fns = {dashboard:pgDash,fila:pgFila,nova:pgNova,politica:pgPolitica,relatorios:pgRelatorios,laudo:pgLaudo,bi_lagostao:pgBILagostao};
  document.getElementById('pg').innerHTML = (fns[D.page]||(() => ''))();
  afterRender();
  // v4.24: sync contador da fila com dado real
@@ -1065,7 +1066,7 @@ function pgDash() {
 <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:24px;align-items:stretch">
 
  <!-- Dark summary card -->
- <div style="background:linear-gradient(145deg,#0C1428 0%,#152039 60%,#1a2848 100%);border-radius:var(--r8);padding:24px;display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
+ <div style="background:linear-gradient(145deg,#0A3332 0%,#15746E 100%);border-radius:var(--r8);padding:24px;display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
  <div>
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
  <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;letter-spacing:.5px">Visão geral da carteira</span>
@@ -1182,6 +1183,272 @@ ${renderPainelLagostao()}
 }
 
 // v4.26: Painel KPIs Lagostao (base historica)
+// v4.29: aba dedicada BI Lagostao com filtros interativos
+window._BI_LAG_FILTERS = { vendedor:'', saida:'', risco:'', prazo:'', busca:'' };
+function pgBILagostao(){
+  const L = (window.LAGOSTAO_DATA || []);
+  const F = window._BI_LAG_FILTERS;
+  // Aplica filtros
+  const filt = L.filter(r => {
+    if (F.vendedor && r.vendedor !== F.vendedor) return false;
+    if (F.saida && !(r.saidas||[]).includes(F.saida)) return false;
+    if (F.risco){
+      const s = r.score;
+      if (F.risco==='baixo' && !(s>700)) return false;
+      if (F.risco==='moderado' && !(s>=601 && s<=700)) return false;
+      if (F.risco==='elevado' && !(s>=501 && s<=600)) return false;
+      if (F.risco==='alto' && !(s<501 && s>0)) return false;
+      if (F.risco==='sem_score' && s>0) return false;
+    }
+    if (F.prazo && !((r.prazo||'').toLowerCase().includes(F.prazo.toLowerCase()))) return false;
+    if (F.busca){
+      const q = F.busca.toLowerCase();
+      if (!((r.cliente||'').toLowerCase().includes(q) || (r.cnpj||'').includes(q))) return false;
+    }
+    return true;
+  });
+
+  const scores = filt.map(r=>r.score).filter(s=>s>0);
+  const scoreMedio = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const limites = filt.map(r=>r.limite).filter(l=>l>0);
+  const totalLimite = limites.reduce((a,b)=>a+b,0);
+  const ticketMedio = limites.length ? totalLimite/limites.length : 0;
+  const totalDividas = filt.reduce((a,b)=>a+(b.dividas||0),0);
+  const clientesComDividas = filt.filter(r=>r.dividas > 100).length;
+
+  const vends = {}; filt.forEach(r=>{ vends[r.vendedor]=(vends[r.vendedor]||0)+1; });
+  const topVends = Object.entries(vends).sort((a,b)=>b[1]-a[1]);
+  const vendedoresOpts = Array.from(new Set(L.map(r=>r.vendedor))).sort();
+
+  const saidas = { Lagostao:0, Global:0, JP:0 };
+  filt.forEach(r=>(r.saidas||[]).forEach(s=>{ if(saidas[s]!==undefined) saidas[s]++; }));
+
+  const rBaixo = scores.filter(s=>s>700).length;
+  const rModerado = scores.filter(s=>s>=601 && s<=700).length;
+  const rElevado = scores.filter(s=>s>=501 && s<=600).length;
+  const rAlto = scores.filter(s=>s<501 && s>0).length;
+  const semScore = filt.length - scores.length;
+
+  const R$fmt = v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const kpi = (lbl,val,sub,cor)=>`<div style="background:#fff;border:1px solid #E4EAF4;border-left:3px solid ${cor};border-radius:10px;padding:14px 16px">
+    <div style="font-size:10px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${lbl}</div>
+    <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:#0A3332;letter-spacing:-.02em;line-height:1">${val}</div>
+    ${sub?`<div style="font-size:10.5px;color:#5F7573;margin-top:4px">${sub}</div>`:''}
+  </div>`;
+
+  const chipStyle = (ativo)=>`padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${ativo?'#15746E':'#D6DDDA'};background:${ativo?'#15746E':'#fff'};color:${ativo?'#fff':'#0A3332'};transition:.15s`;
+
+  return `
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+  <div>
+    <div style="font-size:11px;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;font-weight:700">Análise comercial · Lagostão Pescados</div>
+    <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:#0A3332">Base histórica · ${filt.length} de ${L.length} clientes</div>
+  </div>
+  <button onclick="window._BI_LAG_FILTERS={vendedor:'',saida:'',risco:'',prazo:'',busca:''};render()" style="background:#fff;border:1px solid #D6DDDA;color:#5F7573;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Limpar filtros</button>
+</div>
+
+<!-- Filtros -->
+<div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:1fr 200px 200px 150px;gap:10px;align-items:end">
+    <div>
+      <label style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Buscar cliente ou CNPJ</label>
+      <input value="${F.busca}" oninput="window._BI_LAG_FILTERS.busca=this.value;clearTimeout(window._bit);window._bit=setTimeout(render,250)" placeholder="Nome ou CNPJ" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;font-family:Inter,sans-serif;background:#F5F7F6">
+    </div>
+    <div>
+      <label style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Vendedor</label>
+      <select onchange="window._BI_LAG_FILTERS.vendedor=this.value;render()" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;font-family:Inter,sans-serif;background:#F5F7F6">
+        <option value="">Todos</option>
+        ${vendedoresOpts.map(v=>`<option value="${v}" ${F.vendedor===v?'selected':''}>${v}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Rota de saída</label>
+      <select onchange="window._BI_LAG_FILTERS.saida=this.value;render()" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;font-family:Inter,sans-serif;background:#F5F7F6">
+        <option value="">Todas</option>
+        <option value="Lagostao" ${F.saida==='Lagostao'?'selected':''}>Lagostão</option>
+        <option value="Global" ${F.saida==='Global'?'selected':''}>Global</option>
+        <option value="JP" ${F.saida==='JP'?'selected':''}>JP</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Prazo</label>
+      <input value="${F.prazo}" oninput="window._BI_LAG_FILTERS.prazo=this.value;clearTimeout(window._bit2);window._bit2=setTimeout(render,250)" placeholder="Ex: 14, A vista" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;font-family:Inter,sans-serif;background:#F5F7F6">
+    </div>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <span style="font-size:11px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;align-self:center">Faixa de risco:</span>
+    <span onclick="window._BI_LAG_FILTERS.risco='';render()" style="${chipStyle(!F.risco)}">Todos</span>
+    <span onclick="window._BI_LAG_FILTERS.risco='baixo';render()" style="${chipStyle(F.risco==='baixo')}">Baixo &gt; 700</span>
+    <span onclick="window._BI_LAG_FILTERS.risco='moderado';render()" style="${chipStyle(F.risco==='moderado')}">Moderado 601-700</span>
+    <span onclick="window._BI_LAG_FILTERS.risco='elevado';render()" style="${chipStyle(F.risco==='elevado')}">Elevado 501-600</span>
+    <span onclick="window._BI_LAG_FILTERS.risco='alto';render()" style="${chipStyle(F.risco==='alto')}">Alto &lt; 500</span>
+    <span onclick="window._BI_LAG_FILTERS.risco='sem_score';render()" style="${chipStyle(F.risco==='sem_score')}">Sem score</span>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">
+  ${kpi('Total analisado', filt.length, 'clientes', '#15746E')}
+  ${kpi('Score médio', scoreMedio, scoreMedio>700?'Baixo':scoreMedio>=601?'Moderado':scoreMedio>=501?'Elevado':scoreMedio>0?'Alto':'—', scoreMedio>700?'#059669':scoreMedio>=501?'#D97706':'#DC2626')}
+  ${kpi('Ticket médio', R$fmt(ticketMedio), 'limite concedido', '#15746E')}
+  ${kpi('Total limite', R$fmt(totalLimite), 'carteira ativa', '#0A3332')}
+  ${kpi('Dívidas totais', R$fmt(totalDividas), clientesComDividas+' clientes', '#DC2626')}
+  ${kpi('Score < 500', rAlto, 'alto risco', '#DC2626')}
+</div>
+
+<!-- Distribuicoes interativas -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+  <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:16px">
+    <div style="font-size:11px;font-weight:700;color:#0A3332;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">Vendedores (clique pra filtrar)</div>
+    ${topVends.slice(0,8).map(([v,c])=>{
+      const pct = filt.length ? Math.round(c/filt.length*100) : 0;
+      const ativo = F.vendedor===v;
+      return `<div onclick="window._BI_LAG_FILTERS.vendedor='${v.replace(/'/g,"\\'")}';render()" style="margin-bottom:8px;cursor:pointer;padding:4px;border-radius:6px;transition:.15s;background:${ativo?'#F0F7F6':'transparent'}" onmouseover="this.style.background='#F0F7F6'" onmouseout="this.style.background='${ativo?'#F0F7F6':'transparent'}'">
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px">
+          <span style="font-weight:${ativo?'700':'600'};color:#0A3332">${v}</span>
+          <span style="color:#5F7573">${c} · ${pct}%</span>
+        </div>
+        <div style="height:5px;background:#EEF2F1;border-radius:3px;overflow:hidden"><div style="height:100%;background:${ativo?'linear-gradient(90deg,#15746E,#0A3332)':'#B8DDD9'};width:${pct}%"></div></div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:16px">
+    <div style="font-size:11px;font-weight:700;color:#0A3332;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">Rota de saída (clique pra filtrar)</div>
+    ${Object.entries(saidas).map(([s,c])=>{
+      const pct = filt.length ? Math.round(c/filt.length*100) : 0;
+      const ativo = F.saida===s;
+      const cor = s==='Lagostao'?'#15746E':s==='Global'?'#0A3332':'#8B5CF6';
+      return `<div onclick="window._BI_LAG_FILTERS.saida='${s}';render()" style="margin-bottom:10px;cursor:pointer;padding:4px;border-radius:6px;background:${ativo?'#F0F7F6':'transparent'}">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="font-weight:${ativo?'700':'600'};color:#0A3332">${s}</span>
+          <span style="color:#5F7573">${c} · ${pct}%</span>
+        </div>
+        <div style="height:6px;background:#EEF2F1;border-radius:3px;overflow:hidden"><div style="height:100%;background:${cor};width:${pct}%"></div></div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:16px">
+    <div style="font-size:11px;font-weight:700;color:#0A3332;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">Faixas de risco</div>
+    ${[
+      ['Baixo (>700)', rBaixo, '#059669', 'baixo'],
+      ['Moderado (601-700)', rModerado, '#D97706', 'moderado'],
+      ['Elevado (501-600)', rElevado, '#EA580C', 'elevado'],
+      ['Alto (<500)', rAlto, '#DC2626', 'alto'],
+      ['Sem score', semScore, '#9CA3AF', 'sem_score']
+    ].map(([lbl,c,cor,key])=>{
+      const pct = filt.length ? Math.round(c/filt.length*100) : 0;
+      const ativo = F.risco===key;
+      return `<div onclick="window._BI_LAG_FILTERS.risco='${key}';render()" style="margin-bottom:8px;cursor:pointer;padding:4px;border-radius:6px;background:${ativo?'#F0F7F6':'transparent'}">
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px">
+          <span style="font-weight:${ativo?'700':'600'};color:#0A3332">${lbl}</span>
+          <span style="color:#5F7573">${c} · ${pct}%</span>
+        </div>
+        <div style="height:5px;background:#EEF2F1;border-radius:3px;overflow:hidden"><div style="height:100%;background:${cor};width:${pct}%"></div></div>
+      </div>`;
+    }).join('')}
+  </div>
+</div>
+
+<!-- Tabela clientes -->
+<div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:0;overflow:hidden">
+  <div style="padding:14px 18px;border-bottom:1px solid #E4EAF4;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:12px;font-weight:700;color:#0A3332;text-transform:uppercase;letter-spacing:.05em">Clientes filtrados (${filt.length}) — clique pra ver ficha</div>
+  </div>
+  <div style="max-height:520px;overflow-y:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead style="background:#F5F7F6;position:sticky;top:0">
+        <tr style="text-align:left">
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Cliente</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">CNPJ</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Vendedor</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Fundado</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Score</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Dívidas</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Prazo</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Limite</th>
+          <th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Saída</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filt.slice(0,300).map((r,i)=>{
+          const cor = r.score>700?'#059669':r.score>=601?'#D97706':r.score>=501?'#EA580C':r.score>0?'#DC2626':'#9CA3AF';
+          return `<tr onclick="verFichaLagostao(${i},'${(r.cnpj||'').replace(/'/g,"\\'")}')" style="border-bottom:1px solid #EEF2F1;cursor:pointer;transition:.1s" onmouseover="this.style.background='#F5F7F6'" onmouseout="this.style.background=''">
+            <td style="padding:9px 14px;font-weight:600;color:#0A3332">${r.cliente || '—'}</td>
+            <td style="padding:9px 14px;color:#5F7573;font-family:monospace;font-size:11.5px">${r.cnpj || '—'}</td>
+            <td style="padding:9px 14px;color:#0A3332">${r.vendedor || '—'}</td>
+            <td style="padding:9px 14px;color:#5F7573">${r.fundado || '—'}</td>
+            <td style="padding:9px 14px"><span style="background:${cor}22;color:${cor};padding:2px 8px;border-radius:10px;font-weight:700;font-size:11.5px">${r.score || '—'}</span></td>
+            <td style="padding:9px 14px;color:${r.dividas>100?'#DC2626':'#5F7573'};font-weight:${r.dividas>100?'700':'500'}">${R$fmt(r.dividas)}</td>
+            <td style="padding:9px 14px;color:#0A3332">${r.prazo || '—'}</td>
+            <td style="padding:9px 14px;font-weight:600;color:#0A3332">${R$fmt(r.limite)}</td>
+            <td style="padding:9px 14px;color:#5F7573;font-size:11.5px">${(r.saidas||[]).join(' + ') || '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    ${filt.length > 300 ? `<div style="padding:12px;text-align:center;color:#5F7573;font-size:12px">Mostrando primeiros 300 de ${filt.length}. Refine os filtros.</div>` : ''}
+  </div>
+</div>
+`;
+}
+
+// Modal com ficha completa do cliente Lagostao (da planilha)
+window.verFichaLagostao = function(idx, cnpj){
+  const r = (window.LAGOSTAO_DATA||[]).find(x => x.cnpj===cnpj) || (window.LAGOSTAO_DATA||[])[idx];
+  if (!r) return;
+  const R$fmt = v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const cor = r.score>700?'#059669':r.score>=601?'#D97706':r.score>=501?'#EA580C':r.score>0?'#DC2626':'#9CA3AF';
+  const riscoLbl = r.score>700?'Baixo risco':r.score>=601?'Moderado':r.score>=501?'Elevado':r.score>0?'Alto risco':'Sem score';
+  const old = document.getElementById('ficha-lg-modal'); if (old) old.remove();
+  const ov = document.createElement('div');
+  ov.id = 'ficha-lg-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,51,50,.85);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;padding:20px';
+  ov.innerHTML = `<div style="background:#fff;border-radius:14px;padding:0;max-width:640px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="background:linear-gradient(135deg,#0A3332,#15746E);padding:22px 26px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Ficha histórica</div>
+        <div style="font-family:Poppins,sans-serif;font-size:20px;font-weight:700;margin-top:4px">${r.cliente || '—'}</div>
+      </div>
+      <button onclick="document.getElementById('ficha-lg-modal').remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;cursor:pointer;width:32px;height:32px;border-radius:8px">×</button>
+    </div>
+    <div style="padding:24px 26px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">CNPJ</div><div style="font-family:monospace;font-size:14px;color:#0A3332;font-weight:600;margin-top:2px">${r.cnpj || '—'}</div></div>
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Fundação</div><div style="font-size:14px;color:#0A3332;font-weight:600;margin-top:2px">${r.fundado || '—'}</div></div>
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Vendedor</div><div style="font-size:14px;color:#0A3332;font-weight:600;margin-top:2px">${r.vendedor || '—'}</div></div>
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Data análise</div><div style="font-size:14px;color:#0A3332;font-weight:600;margin-top:2px">${r.data || '—'}</div></div>
+      </div>
+      <div style="background:#F5F7F6;border-radius:10px;padding:16px 18px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div>
+            <div style="font-size:10.5px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Score</div>
+            <div style="font-family:Poppins,sans-serif;font-size:32px;font-weight:800;color:${cor};line-height:1;margin-top:4px">${r.score || '—'}</div>
+            <div style="font-size:11px;color:${cor};font-weight:600;margin-top:2px">${riscoLbl}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10.5px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Limite concedido</div>
+            <div style="font-family:Poppins,sans-serif;font-size:22px;font-weight:800;color:#0A3332;margin-top:4px">${R$fmt(r.limite)}</div>
+            <div style="font-size:11px;color:#5F7573;margin-top:2px">Prazo: ${r.prazo || '—'}</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Capital social</div><div style="font-size:14px;color:#0A3332;font-weight:700;margin-top:2px">${R$fmt(r.capital)}</div></div>
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Prospecção</div><div style="font-size:14px;color:#0A3332;font-weight:700;margin-top:2px">${R$fmt(r.prospeccao)}</div></div>
+        <div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Dívidas</div><div style="font-size:14px;color:${r.dividas>100?'#DC2626':'#0A3332'};font-weight:700;margin-top:2px">${R$fmt(r.dividas)}</div></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">Rota de saída</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${(r.saidas||[]).map(s=>`<span style="background:#0A3332;color:#fff;padding:4px 10px;border-radius:12px;font-size:11.5px;font-weight:600">${s}</span>`).join('') || '<span style="color:#9CA3AF">—</span>'}
+        </div>
+      </div>
+      ${r.obs ? `<div><div style="font-size:10px;color:#9896A8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">Observações</div><div style="font-size:13px;color:#0A3332;background:#FEF3C7;padding:10px 12px;border-radius:8px">${r.obs}</div></div>` : ''}
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+};
+
 function renderPainelLagostao(){
   const L = (window.LAGOSTAO_DATA || []);
   if (!L.length) return '';
@@ -5919,245 +6186,144 @@ window.imprimirFichaAtual = function(){
     if (num === null || num === undefined || num === "") return "";
     var n = Number(num);
     if (isNaN(n)) return "";
-    return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return n.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
   function parseBR(str){
-    if (!str) return null;
-    // Remove R$, espacos, pontos de milhar; troca virgula decimal por ponto
-    var s = String(str).replace(/[R$\s.]/g, "").replace(",", ".");
-    var n = parseFloat(s);
-    return isNaN(n) ? null : n;
+    if (typeof str !== "string") return 0;
+    var s = str.replace(/\./g, "").replace(",", ".");
+    var n = Number(s);
+    return isNaN(n) ? 0 : n;
   }
-  function formatarInput(input){
-    var raw = input.value;
-    if (!raw) { input.dataset.numeric = ""; return; }
-    var n = parseBR(raw);
-    if (n === null) return;
-    input.dataset.numeric = String(n);
-    input.value = fmtBR(n);
-  }
-  function bindInput(input){
-    if (input.dataset._moedaBound === "1") return;
-    input.dataset._moedaBound = "1";
-    input.addEventListener("blur", function(){ formatarInput(input); });
-    input.addEventListener("focus", function(){
-      var n = parseBR(input.value);
-      if (n !== null) input.value = String(n).replace(".", ",");
+  function aplicar(el){
+    if (!el || el._moedaOk) return;
+    el._moedaOk = true;
+    el.addEventListener("blur", function(){
+      var v = parseBR(el.value);
+      if (v > 0) el.value = fmtBR(v);
     });
-    if (input.value) formatarInput(input);
   }
   function scan(){
-    document.querySelectorAll('input[data-moeda]').forEach(bindInput);
+    document.querySelectorAll("input[data-moeda]").forEach(aplicar);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", scan);
   else scan();
-  setInterval(scan, 1500);
-  window.pescadoMoedaParse = parseBR;
-  window.pescadoMoedaFmt = fmtBR;
+  new MutationObserver(scan).observe(document.body || document.documentElement, {childList:true, subtree:true});
 })();
 
-// PESCADO v4.17 - Assistente IA da ficha aberta
+// PESCADO v4.17 - Assistente IA lateral da ficha
 (function PescadoAssistente(){
-  var LS_MODELO = "pescado_assist_modelo";
-  var LS_APIKEY = "pescado_assist_apikey";
-  var LS_HIST = "pescado_assist_hist";
-
-  var MODELOS = [
-    { id: "claude-haiku-4-5-20251001",  nome: "Haiku 4.5 (rapido/barato)" },
-    { id: "claude-sonnet-4-5-20250929", nome: "Sonnet 4.5 (equilibrado)" },
-    { id: "claude-opus-4-1-20250805",   nome: "Opus 4.1 (mais preciso)" }
-  ];
-
-  function getModelo(){ return localStorage.getItem(LS_MODELO) || MODELOS[0].id; }
-  function setModelo(m){ localStorage.setItem(LS_MODELO, m); }
-  function getApiKey(){ return localStorage.getItem(LS_APIKEY) || ""; }
-  function setApiKey(k){ if (k) localStorage.setItem(LS_APIKEY, k); else localStorage.removeItem(LS_APIKEY); }
-  function getHist(){ try { return JSON.parse(localStorage.getItem(LS_HIST) || "[]"); } catch(e){ return []; } }
-  function setHist(h){ localStorage.setItem(LS_HIST, JSON.stringify(h.slice(-30))); }
-
+  var CFG = { modelos: [
+    { id:"claude-haiku-4-5-20251001", label:"Haiku 4.5 (rapido, barato)" },
+    { id:"claude-sonnet-4-5-20250929", label:"Sonnet 4.5 (equilibrado)" },
+    { id:"claude-opus-4-1-20250908", label:"Opus 4.1 (potente)" }
+  ]};
+  var SUGESTOES = ["Resumir a ficha", "Riscos principais", "Sugerir limite", "Explicar score"];
+  var HIST_KEY = "pescado_chat_hist";
+  function getHist(){ try { return JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); } catch(e){ return []; } }
+  function setHist(h){ localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(-30))); }
   function contextoFicha(){
-    try {
-      var id = window._curAnaliseId;
-      if (!id) return null;
-      var lista = (window.D && window.D.analyses) || [];
-      var a = lista.find(function(x){ return x.id === id || String(x.id) === String(id); });
-      if (!a) return null;
-      var alerts = (a.alerts && a.alerts.length) ? a.alerts.join("; ") : "nenhum";
-      var docs = (a.docs && a.docs.length) ? a.docs.map(function(d){ return d.n + " (" + d.cf + "% confianca)"; }).join("; ") : "nenhum";
-      return [
-        "FICHA ATUAL:",
-        "- Cliente: " + (a.nome || "--") + " (" + (a.tipo || "--") + ")",
-        "- CPF/CNPJ: " + (a.cnpj || "--"),
-        "- Valor pretendido: R$ " + (a.valor || 0).toLocaleString("pt-BR"),
-        "- Prazo: " + (a.prazo || "--"),
-        "- Score: " + (a.score || "sem score") + " | Risco: " + (a.risco || "--"),
-        "- Status: " + (a.status || "--"),
-        "- Restricoes Serasa: " + (a.rest !== null ? a.rest : "--"),
-        "- Protestos CENPROT: " + (a.prot !== null ? a.prot : "--"),
-        "- Documentos: " + docs,
-        "- Alertas: " + alerts,
-        "- Recomendacao IA: " + (a.recIA || "--"),
-        "- Decisao final: " + (a.final || "pendente") + (a.justificativa ? " (justificativa: " + a.justificativa + ")" : ""),
-        "- Vendedor: " + (a.vendedor || "--")
-      ].join("\n");
-    } catch(e){ return null; }
+    var a = (window.D && window.D.analyses && window.D.analyses[0]) || null;
+    if (!a) return "";
+    return "Ficha aberta: " + (a.nome||"—") + " | CNPJ: " + (a.cnpj||"—") + " | Score: " + (a.score||"—") + " | Valor: " + (a.valor||"—") + " | Prazo: " + (a.prazo||"—");
   }
-
-  var SUGESTOES = [
-    "Analise essa ficha e me diga se deveria aprovar",
-    "Qual limite de credito voce recomenda? Justifique",
-    "Existe algum sinal de alerta que eu nao esteja vendo?",
-    "Que ressalvas eu deveria incluir na aprovacao?"
-  ];
-
-  function montarModal(){
-    if (document.getElementById("pescado-assist")) return;
-    var m = document.createElement("div");
-    m.id = "pescado-assist";
-    m.style.cssText = "position:fixed;top:0;right:0;bottom:0;width:440px;max-width:100vw;background:#fff;box-shadow:-6px 0 24px rgba(0,0,0,.15);z-index:99998;display:flex;flex-direction:column;font-family:Inter,sans-serif;border-left:1px solid #E8E5DE";
-    var opts = MODELOS.map(function(o){ return '<option value="' + o.id + '"' + (o.id === getModelo() ? " selected" : "") + '>' + o.nome + '</option>'; }).join("");
-    m.innerHTML = ''
-      + '<div style="padding:14px 16px;border-bottom:1px solid #E8E5DE;background:#F9F8F5">'
-      +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-      +     '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:15px;color:#191824">Assistente IA</div>'
-      +     '<button id="pa-cfg" title="Configurar chave API" style="background:transparent;border:1px solid #D6D2CB;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer;color:#666">config</button>'
-      +     '<button id="pa-x" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#666;line-height:1;padding:0 4px">×</button>'
-      +   '</div>'
-      +   '<div style="display:flex;gap:6px;align-items:center">'
-      +     '<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em">Modelo</span>'
-      +     '<select id="pa-modelo" style="flex:1;padding:4px 8px;border:1px solid #D6D2CB;border-radius:5px;font-size:11.5px;font-family:Inter,sans-serif">' + opts + '</select>'
-      +   '</div>'
-      +   '<div id="pa-cfg-box" style="display:none;margin-top:8px;padding:8px;background:#fff;border:1px solid #E8E5DE;border-radius:6px">'
-      +     '<div style="font-size:11px;color:#555;margin-bottom:4px">Chave Anthropic propria (opcional, fica so nesse browser):</div>'
-      +     '<input id="pa-apikey" type="password" placeholder="sk-ant-api03-..." style="width:100%;padding:5px 8px;border:1px solid #D6D2CB;border-radius:5px;font-size:11px;box-sizing:border-box" />'
-      +     '<div style="font-size:10px;color:#888;margin-top:4px">Se vazio, usa a chave do sistema.</div>'
-      +   '</div>'
+  window.pescadoAssistenteAbrir = function(){
+    if (document.getElementById("pa-painel")) return;
+    var p = document.createElement("div");
+    p.id = "pa-painel";
+    p.style.cssText = "position:fixed;top:0;right:0;bottom:0;width:440px;background:#F5F7F6;z-index:99997;box-shadow:-4px 0 24px rgba(10,51,50,.2);display:flex;flex-direction:column;font-family:Inter,sans-serif";
+    p.innerHTML = '<div style="padding:14px 18px;background:#0A3332;color:#fff;display:flex;justify-content:space-between;align-items:center">'
+      + '<div><div style="font-family:Poppins,sans-serif;font-weight:700;font-size:15px">Assistente IA</div><div style="font-size:11px;color:#B8DDD9;margin-top:2px">Contexto da ficha aberta</div></div>'
+      + '<button onclick="pescadoAssistenteFechar()" style="background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;width:28px;height:28px;border-radius:6px;cursor:pointer">×</button>'
       + '</div>'
-      + '<div id="pa-msgs" style="flex:1;overflow-y:auto;padding:14px 16px;background:#FAFAF8"></div>'
-      + '<div id="pa-sug" style="padding:8px 12px;border-top:1px solid #E8E5DE;background:#fff;display:flex;flex-wrap:wrap;gap:6px"></div>'
-      + '<div style="padding:10px 12px;border-top:1px solid #E8E5DE;background:#fff;display:flex;gap:8px">'
-      +   '<textarea id="pa-inp" placeholder="Pergunte algo sobre essa ficha..." rows="2" style="flex:1;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:12.5px;font-family:Inter,sans-serif;resize:none"></textarea>'
+      + '<div style="padding:10px 14px;background:#fff;border-bottom:1px solid #E4EAF4">'
+      +   '<div style="display:flex;gap:6px;margin-bottom:6px">'
+      +     '<select id="pa-modelo" style="flex:1;padding:5px 8px;border:1px solid #D6DDDA;border-radius:6px;font-size:11.5px;font-family:Inter,sans-serif">' + CFG.modelos.map(function(m){ return '<option value="'+m.id+'">'+m.label+'</option>'; }).join('') + '</select>'
+      +   '</div>'
+      +   '<input id="pa-key" placeholder="Chave Anthropic propria (opcional)" type="password" style="width:100%;padding:5px 8px;border:1px solid #D6DDDA;border-radius:6px;font-size:11px;font-family:Inter,sans-serif">'
+      + '</div>'
+      + '<div id="pa-msgs" style="flex:1;overflow-y:auto;padding:12px 16px"></div>'
+      + '<div id="pa-sug" style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #E4EAF4;background:#F5F7F6"></div>'
+      + '<div style="padding:10px 14px;background:#fff;border-top:1px solid #E4EAF4;display:flex;gap:6px">'
+      +   '<textarea id="pa-inp" placeholder="Digite sua pergunta..." style="flex:1;padding:8px 10px;border:1px solid #D6DDDA;border-radius:6px;font-size:12.5px;font-family:Inter,sans-serif;resize:none;min-height:36px;max-height:100px"></textarea>'
       +   '<button id="pa-send" style="background:#15746E;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;font-family:Inter,sans-serif">Enviar</button>'
       + '</div>';
-    document.body.appendChild(m);
-
-    document.getElementById("pa-x").onclick = function(){ m.remove(); };
-    document.getElementById("pa-modelo").onchange = function(e){ setModelo(e.target.value); };
-    document.getElementById("pa-cfg").onclick = function(){
-      var box = document.getElementById("pa-cfg-box");
-      box.style.display = box.style.display === "none" ? "block" : "none";
-      var inp = document.getElementById("pa-apikey");
-      inp.value = getApiKey();
-      inp.onchange = function(e){ setApiKey(e.target.value.trim()); };
-    };
+    document.body.appendChild(p);
     document.getElementById("pa-send").onclick = enviar;
     document.getElementById("pa-inp").onkeydown = function(e){
       if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); enviar(); }
     };
-
-    // Sugestoes
     var sug = document.getElementById("pa-sug");
     SUGESTOES.forEach(function(s){
       var b = document.createElement("button");
       b.textContent = s;
-      b.style.cssText = "background:#fff;border:1px solid #D6D2CB;border-radius:14px;padding:5px 10px;font-size:11px;cursor:pointer;color:#2E2B3A;font-family:Inter,sans-serif";
+      b.style.cssText = "background:#fff;border:1px solid #D6DDDA;border-radius:14px;padding:5px 10px;font-size:11px;cursor:pointer;color:#0A3332;font-family:Inter,sans-serif";
       b.onclick = function(){ document.getElementById("pa-inp").value = s; enviar(); };
       sug.appendChild(b);
     });
-
-    // Historico
     var hist = getHist();
     if (hist.length === 0){
-      addMsg("assistant", "Ola. Sou o assistente da ficha aberta. Ja recebi o contexto (score, docs, alertas, decisao). Pergunte o que quiser sobre a analise.");
+      addMsg("assistant", "Ola. Sou o assistente da ficha aberta. Ja recebi o contexto (score, docs, alertas). Pergunte o que quiser.");
     } else {
-      hist.forEach(function(msg){ addMsg(msg.role, msg.content, true); });
+      hist.forEach(function(m){ addMsg(m.role, m.content, true); });
     }
-  }
-
+  };
+  window.pescadoAssistenteFechar = function(){ var p = document.getElementById("pa-painel"); if (p) p.remove(); };
   function addMsg(role, content, skipStore){
-    var box = document.getElementById("pa-msgs");
-    if (!box) return;
+    var box = document.getElementById("pa-msgs"); if (!box) return;
     var div = document.createElement("div");
     var isUser = role === "user";
-    div.style.cssText = "margin-bottom:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;line-height:1.45;font-family:Inter,sans-serif;white-space:pre-wrap;" + (isUser ? "background:#191824;color:#fff;margin-left:24px" : "background:#fff;color:#191824;border:1px solid #E8E5DE;margin-right:24px");
+    div.style.cssText = "margin-bottom:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;line-height:1.45;font-family:Inter,sans-serif;white-space:pre-wrap;" + (isUser ? "background:#0A3332;color:#fff;margin-left:24px" : "background:#fff;color:#0A3332;border:1px solid #E4EAF4;margin-right:24px");
     div.textContent = content;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
-    if (!skipStore){
-      var hist = getHist();
-      hist.push({ role: role, content: content });
-      setHist(hist);
-    }
+    if (!skipStore){ var h = getHist(); h.push({role:role, content:content}); setHist(h); }
   }
-
   async function enviar(){
     var inp = document.getElementById("pa-inp");
     var txt = (inp.value || "").trim();
     if (!txt) return;
     inp.value = "";
     addMsg("user", txt);
-
     var thinking = document.createElement("div");
     thinking.id = "pa-thinking";
     thinking.textContent = "pensando...";
-    thinking.style.cssText = "margin-bottom:10px;padding:9px 12px;font-size:11.5px;color:#888;font-style:italic;font-family:Inter,sans-serif";
+    thinking.style.cssText = "margin-bottom:10px;padding:9px 12px;font-size:11.5px;color:#5F7573;font-style:italic";
     document.getElementById("pa-msgs").appendChild(thinking);
-
     try {
       var ctx = contextoFicha();
       var hist = getHist();
-      var msgsPayload = hist.slice(-10).map(function(m){ return { role: m.role, content: m.content }; });
-      if (ctx){
-        var novo = ctx + "\n\nPergunta do operador: " + txt;
-        if (msgsPayload.length) {
-          msgsPayload[msgsPayload.length - 1] = { role: "user", content: novo };
-        } else {
-          msgsPayload.push({ role: "user", content: novo });
-        }
+      var msgs = hist.slice(-10).map(function(m){ return { role:m.role, content:m.content }; });
+      if (ctx && msgs.length){
+        msgs[msgs.length-1] = { role:"user", content: ctx + "\n\nPergunta: " + txt };
+      } else if (ctx){
+        msgs.push({ role:"user", content: ctx + "\n\nPergunta: " + txt });
       }
-      var modelo = document.getElementById("pa-modelo") ? document.getElementById("pa-modelo").value : "claude-haiku-4-5-20251001";
-      var keyExtra = document.getElementById("pa-key") ? document.getElementById("pa-key").value.trim() : "";
-      var body = { messages: msgsPayload, modelo: modelo };
+      var modelo = document.getElementById("pa-modelo")?.value || "claude-haiku-4-5-20251001";
+      var keyExtra = document.getElementById("pa-key")?.value.trim() || "";
+      var body = { messages: msgs, modelo: modelo };
       if (keyExtra) body.api_key_override = keyExtra;
-      var r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      var r = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
       var j = await r.json();
-      var t = document.getElementById("pa-thinking");
-      if (t) t.remove();
-      if (!r.ok) {
-        addMsg("assistant", "Erro: " + (j.detalhe || j.erro || "falha"));
-      } else {
-        addMsg("assistant", j.resposta || "(sem resposta)");
-      }
+      var t = document.getElementById("pa-thinking"); if (t) t.remove();
+      if (!r.ok) addMsg("assistant", "Erro: " + (j.detalhe || j.erro || "falha"));
+      else addMsg("assistant", j.resposta || "(sem resposta)");
     } catch(e){
-      var t = document.getElementById("pa-thinking");
-      if (t) t.remove();
+      var t = document.getElementById("pa-thinking"); if (t) t.remove();
       addMsg("assistant", "Erro ao chamar IA: " + e.message);
     }
   }
-
-  document.addEventListener("DOMContentLoaded", montarPainel);
-  if (document.readyState !== "loading") montarPainel();
 })();
 
-// ============================================================
-// v4.22 - GERAR EMAIL DE RETORNO (Francisco Elves C.)
-// ============================================================
+// v4.22/v4.27 - Gerar email de retorno (Francisco Elves C.) + salvar Supabase
 window.gerarEmailRetorno = function(tipo){
   try {
     var a = (typeof state !== "undefined" && state && state.openA) ? state.openA : null;
-    // Fallback: se nao tiver state.openA, procura pela ficha carregada no D
-    if (!a && window.D && window.D.analyses){
-      var _pOpen = document.querySelector("[data-open-ficha]");
-      var _openId = _pOpen ? _pOpen.getAttribute("data-open-ficha") : null;
-      if (_openId) a = window.D.analyses.find(x => String(x.id) === String(_openId));
-      if (!a) a = window.D.analyses[0]; // ultima ficha aberta
-    }
+    if (!a && window.D && window.D.analyses){ a = window.D.analyses[0]; }
     var cnpj = (a && (a.cnpj || a.cpf_cnpj)) || document.getElementById("fc")?.value || "";
     var nome = (a && (a.nome || a.razao_social)) || document.getElementById("fn")?.value || "";
     var score = (a && a.score) || document.getElementById("rep-score")?.value || "";
     var limite = document.getElementById("rep-limite")?.value || (a && a.valor) || "";
     var prazo = document.getElementById("rep-prazo")?.value || (a && a.prazo) || "14 dias";
-    // v4.27: destinatario = email do vendedor (da ficha original)
     var emailVendedor = (a && a.dados && (a.dados.email_vendedor || a.dados.email_cliente)) || "";
     var nomeVendedor = (a && (a.vendedor || (a.dados && a.dados.vendedor))) || "";
     var fichaId = a && (a._dbId || a.id) || null;
@@ -6168,60 +6334,43 @@ window.gerarEmailRetorno = function(tipo){
     else if (s >= 501) perfil = "satisfatório";
     else perfil = "abaixo do parametro";
 
-    var corpo = "";
-    var assunto = "";
+    var corpo = "", assunto = "";
     if (tipo === "aprovado") {
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado(s),\n\n" +
-        "Após análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas.\n\n" +
-        "Dessa forma, aprovamos as seguintes condições comerciais:\n\n" +
-        "Limite de crédito: " + (limite || "R$ ______") + "\n" +
-        "Prazo de pagamento: " + (prazo || "14 dias") + "\n\n" +
-        "As condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\n" +
-        "Permanecemos à disposição para quaisquer esclarecimentos.\n\n" +
-        "Atenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas.\n\nDessa forma, aprovamos as seguintes condições comerciais:\n\nLimite de crédito: " + (limite || "R$ ______") + "\nPrazo de pagamento: " + (prazo || "14 dias") + "\n\nAs condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     } else {
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado,\n\n" +
-        "Após análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito.\n\n" +
-        "Dessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\n" +
-        "Contudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\n" +
-        "Permanecemos à disposição para quaisquer esclarecimentos.\n\n" +
-        "Atenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado,\n\nApós análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito.\n\nDessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\nContudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     }
 
-    var old = document.getElementById("email-modal");
-    if (old) old.remove();
+    var old = document.getElementById("email-modal"); if (old) old.remove();
     var ov = document.createElement("div");
     ov.id = "email-modal";
     ov.setAttribute("data-ficha-id", fichaId || "");
     ov.setAttribute("data-tipo", tipo);
     ov.style.cssText = "position:fixed;inset:0;background:rgba(10,51,50,.85);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;padding:20px";
-    ov.innerHTML =
-      '<div style="background:#fff;border-radius:14px;padding:26px 28px;max-width:680px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-          '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:17px;color:#0A3332">Email de retorno — ' + (tipo === "aprovado" ? "Aprovado" : "Somente à vista") + '</div>' +
-          '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666">×</button>' +
-        '</div>' +
-        '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Para (vendedor)</label>' +
-        '<input id="em-para" value="' + emailVendedor.replace(/"/g,"&quot;") + '" placeholder="email do vendedor" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:10px;font-family:Inter,sans-serif;box-sizing:border-box;background:' + (emailVendedor ? '#F0F7F6' : '#FEF3C7') + '">' +
-        (nomeVendedor ? '<div style="font-size:11px;color:#5F7573;margin-top:-6px;margin-bottom:10px">Vendedor: ' + nomeVendedor + '</div>' : '') +
-        '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Assunto</label>' +
-        '<input id="em-assunto" value="' + assunto.replace(/"/g,"&quot;") + '" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:Inter,sans-serif;box-sizing:border-box">' +
-        '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Corpo</label>' +
-        '<textarea id="em-corpo" style="width:100%;min-height:280px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>' +
-        '<div id="em-status" style="margin-top:10px;font-size:12px;color:#5F7573;min-height:18px"></div>' +
-        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
-          '<button onclick="salvarEnviarEmail()" style="flex:1;min-width:180px;background:#15746E;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer">Salvar + Enviar (mailto)</button>' +
-          '<button onclick="salvarEmailSemEnviar()" style="background:#0A3332;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer">Só salvar</button>' +
-          '<button onclick="(function(){var t=document.getElementById(\'em-corpo\').value;navigator.clipboard.writeText(t);var b=event.target;b.textContent=\'Copiado\';setTimeout(function(){b.textContent=\'Copiar\'},1500)})()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer">Copiar</button>' +
-          '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>' +
-        '</div>' +
-      '</div>';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:26px 28px;max-width:680px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+      +   '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:17px;color:#0A3332">Email de retorno — ' + (tipo === "aprovado" ? "Aprovado" : "Somente à vista") + '</div>'
+      +   '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666">×</button>'
+      + '</div>'
+      + '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Para (vendedor)</label>'
+      + '<input id="em-para" value="' + emailVendedor.replace(/"/g,"&quot;") + '" placeholder="email do vendedor" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:10px;font-family:Inter,sans-serif;box-sizing:border-box;background:' + (emailVendedor ? '#F0F7F6' : '#FEF3C7') + '">'
+      + (nomeVendedor ? '<div style="font-size:11px;color:#5F7573;margin-top:-6px;margin-bottom:10px">Vendedor: ' + nomeVendedor + '</div>' : '')
+      + '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Assunto</label>'
+      + '<input id="em-assunto" value="' + assunto.replace(/"/g,"&quot;") + '" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:Inter,sans-serif;box-sizing:border-box">'
+      + '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Corpo</label>'
+      + '<textarea id="em-corpo" style="width:100%;min-height:280px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>'
+      + '<div id="em-status" style="margin-top:10px;font-size:12px;color:#5F7573;min-height:18px"></div>'
+      + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
+      +   '<button onclick="salvarEnviarEmail()" style="flex:1;min-width:180px;background:#15746E;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer">Salvar + Enviar (mailto)</button>'
+      +   '<button onclick="salvarEmailSemEnviar()" style="background:#0A3332;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer">Só salvar</button>'
+      +   '<button onclick="(function(){var t=document.getElementById(\'em-corpo\').value;navigator.clipboard.writeText(t);var b=event.target;b.textContent=\'Copiado\';setTimeout(function(){b.textContent=\'Copiar\'},1500)})()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer">Copiar</button>'
+      +   '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>'
+      + '</div>'
+      + '</div>';
     document.body.appendChild(ov);
-  } catch(e){
-    alert("Erro ao gerar email: " + e.message);
-  }
+  } catch(e){ alert("Erro ao gerar email: " + e.message); }
 };
 
 window.salvarEnviarEmail = async function(){ await window._persistirEmail(true); };
