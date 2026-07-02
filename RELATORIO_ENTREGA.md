@@ -1,346 +1,169 @@
-# Pescado Credito — Relatorio de Entrega
+# RELATORIO DE ENTREGA — Pescado Credito v4.38
 
-**Cliente final:** Lagostao Pescados
-**Contrato via:** Black Eagle
-**Operador (analista):** Francisco Elves C. — Departamento de Credito e Cobranca
-**Data desta versao:** 2026-07-02
-**Versao do codigo:** v4.29
-
----
-
-## 1. Links de acesso
-
-| Perfil | URL | Login |
-|---|---|---|
-| **Elves (analista)** — dashboard completo | https://pescado-credito-seven.vercel.app | pescado@teste.com / @pescado2026 |
-| **Vendedor** — link publico sem login | https://pescado-credito-seven.vercel.app/vendedor.html | — |
-| **Admin** — cap Anthropic + config | https://pescado-credito-seven.vercel.app/admin.html | — |
-| **API health check** | https://pescado-credito-seven.vercel.app/api/health | — |
-| **Repositorio GitHub** | https://github.com/issao2026/pescado-credito1 | — |
-| **Dashboard Vercel** | https://vercel.com/issaoyokoi2026-3419s-projects/pescado-credito | — |
-| **Dashboard Supabase** | https://supabase.com/dashboard/project/hebznnfqamgedwtgmluh | — |
+**Cliente:** Lagostao Pescados
+**Contratante:** Black Eagle
+**Operador do sistema:** Francisco Elves C. (Departamento de Credito e Cobranca)
+**Ambiente:** producao (Vercel)
+**Data desta entrega:** 2026-07-02
 
 ---
 
-## 2. Diretorio local
+## LINKS
 
-| Item | Caminho |
-|---|---|
-| Raiz do projeto | `C:\Users\nissa\Documents\Claude\Projects\Pescado\` |
-| Codigo deployavel | `C:\Users\nissa\Documents\Claude\Projects\Pescado\deploy-vercel\` |
-| Instrucoes Claude | `C:\Users\nissa\Documents\Claude\Projects\Pescado\CLAUDE.md` |
-| Este relatorio | `C:\Users\nissa\Documents\Claude\Projects\Pescado\deploy-vercel\RELATORIO_ENTREGA.md` |
+- **Sistema (Elves / administracao):** https://pescado-credito-seven.vercel.app/
+- **Link publico para vendedores:** https://pescado-credito-seven.vercel.app/vendedor.html
+- **Repositorio GitHub:** https://github.com/issao2026/pescado-credito1
+- **Painel admin (Anthropic + cap IA):** https://pescado-credito-seven.vercel.app/admin.html
 
----
+## CREDENCIAIS
 
-## 3. Contas e credenciais
+- **Login do Elves:** `pescado@teste.com` / `@pescado2026`
+- **Vendedores nao precisam de login** — usam `/vendedor.html` direto
+- **ANTHROPIC_API_KEY:** configurada em Vercel > Settings > Environment Variables
+- **SUPABASE_URL / SUPABASE_SERVICE_KEY:** configurados em Vercel Env Vars
 
-### GitHub
-- Email: `issao.arquitetura@gmail.com`
-- Usuario: `issao2026`
-- Repositorio: `pescado-credito1` (publico)
-- Branch: `main`
-- Deploy trigger: push automatico via webhook Vercel
+## LIMITE DE IA (controlavel em `/admin.html`)
 
-### Vercel
-- Organizacao: `issaoyokoi2026-3419s-projects`
-- Projeto: `pescado-credito`
-- Plano: **Hobby** (12 serverless functions — no limite)
-- Git integration: `issao2026/pescado-credito1` na branch `main`
-
-### Supabase
-- Login via GitHub OAuth (`issao.arquitetura@gmail.com`)
-- Organizacao: `nissao-web's Org`
-- Projeto: `pescado-credito`
-- ID: `hebznnfqamgedwtgmluh`
-- Plano: **Free** (500 MB DB)
-- RLS habilitado nas 5 tabelas
-- Tabelas: `fichas`, `audit_trail`, `consumo_ia`, `config`, `entidades`
-
-### Anthropic
-- Chave `ANTHROPIC_API_KEY` nas Env Vars da Vercel
-- Cap mensal: US$ 1.50 (controlavel em `/admin.html`)
-- Modelo padrao: `claude-haiku-4-5-20251001`
-- Fallback: `claude-sonnet-4-5-20250929`
-- Assistente IA: usuario escolhe Haiku/Sonnet/Opus + pode inserir chave propria
-
-### Credenciais (onde estao)
-
-| Segredo | Onde | Formato |
-|---|---|---|
-| Anthropic API Key | Vercel > Settings > Env Variables > `ANTHROPIC_API_KEY` | `sk-ant-api03-...` |
-| Supabase URL | Vercel Env Vars > `SUPABASE_URL` | `https://xxxx.supabase.co` |
-| Supabase Service Key | Vercel Env Vars > `SUPABASE_SERVICE_KEY` | Legacy JWT (`eyJ...`), NAO `sb_secret_*` |
-| Login sistema (Elves) | localStorage do browser | `pescado@teste.com` / `@pescado2026` |
+- Cap mensal: US$ 1,50
+- Modelo padrao: Claude Haiku 4.5 (~US$ 0,02-0,10 por analise)
+- Fallback: Claude Sonnet 4.5
 
 ---
 
-## 4. Deploy
+## FLUXO OPERACIONAL COMPLETO
 
-**REGRA FIXA:** NAO usar `vercel` CLI. NAO usar PowerShell. NAO usar `git push`.
+### 1. Vendedor abre `/vendedor.html`
+   - Preenche dados proprios (nome, email)
+   - Preenche dados do cliente (razao social, CNPJ, valor, prazo)
+   - CNPJ tem validacao de digitos + auto-preenchimento via BrasilAPI (quando disponivel)
+   - Prazos permitidos: A vista / 7 / 14 / 21 / 30 + combinacoes (7/14, 14/21, 14/21/30, 7/14/21/30)
+   - Anexa documentos opcionais
+   - Envia. Recebe protocolo (ex: `5937F952`).
 
-**Fluxo unico:**
-1. Editar arquivo(s) em `deploy-vercel/`
-2. Upload no GitHub via Chrome MCP em `https://github.com/issao2026/pescado-credito1/upload/main`
-3. Vercel deploya automatico em ~1 minuto
-4. Confirmar no ar: `?cb=teste` na URL pra bust cache
+### 2. Ficha chega para Elves
+   - Aparece no Dashboard em "RECEBIDAS HOJE" e no "Quadro de avisos" (canto superior direito)
+   - Aparece na "Fila Operacional"
+   - Notificacao no lateral: badge de contagem
 
-**Pre-requisito:** Issao logado no GitHub pelo Chrome.
+### 3. Elves abre a ficha e analisa
+   - Colar relatorio Serasa (texto ou PDF) — sistema extrai score + restricoes
+   - Colar relatorio CENPROT — sistema extrai protestos
+   - OCR de documentos anexados (PJ: contrato social, cartao CNPJ, comprovante endereco; PF: RG/CNH, comprovante residencia/renda)
+   - IA sugere risco + recomendacao
+   - Elves ajusta manualmente: SCORE, LIMITE APROVADO, PRAZO, OBSERVACOES
 
----
+### 4. Decisao final
+   - Botoes: **Aprovado** / Com ressalvas / Reprovado / Submeter a gerencia / Somente a vista / Inconclusivo
+   - Ao clicar, a decisao persiste no Supabase (score/limite/prazo/justificativa/operador/data)
 
-## 5. Fluxo de trabalho (2 perfis)
+### 5. Envio de retorno ao vendedor
+   - Botao verde grande no rodape da ficha: **Enviar retorno ao vendedor (Aprovado/A vista)**
+   - Modal com email pre-preenchido:
+     - PARA: email do vendedor (auto-preenchido do cadastro)
+     - ASSUNTO: "Retorno de Analise de Credito - {cliente}"
+     - CORPO: laudo redigido em nome de Francisco Elves C., com limite e prazo APROVADOS (nao os pretendidos)
+   - 4 acoes: Salvar+Enviar (mailto do cliente de email padrao) / So salvar (arquiva na ficha) / Copiar / Fechar
+   - Email fica arquivado em `dados.email_retorno` da ficha para auditoria
 
-### Vendedor (link publico)
-1. Acessa `https://pescado-credito-seven.vercel.app/vendedor.html`
-2. Preenche: nome + email (obrigatorios) + dados do cliente + valor + prazo + observacoes
-3. Anexa documentos (opcional)
-4. Submete → ficha criada no Supabase com status `Aguardando análise` e `origem: vendedor`
-5. Ficha aparece no quadro de avisos verde na lateral direita do dashboard do Elves
-6. Protocolo gerado com 8 caracteres (mostrado ao vendedor)
-
-### Elves (analista)
-1. Login com `pescado@teste.com` / `@pescado2026`
-2. Dashboard carrega automatico do Supabase (sem dados ficticios)
-3. Sidebar verde Lagostao com paginas: Dashboard / Fila Operacional / Nova Análise / Análise Comercial / Politica de Credito / Relatorios
-4. Quadro de avisos na lateral direita mostra fichas do vendedor pendentes
-5. Ao abrir ficha:
-   - Preenche score, limite, prazo, veredito
-   - Timer SLA de 10 minutos visivel
-   - Assistente IA lateral disponivel (Haiku/Sonnet/Opus)
-6. Ao gerar email de retorno:
-   - 2 templates prontos (Aprovado / Somente a vista)
-   - Assinatura fixa: **Francisco Elves C. — Departamento de Credito e Cobranca**
-   - Destinatario preenche automaticamente com o email do vendedor
-   - Botao "Salvar + Enviar" → grava em `dados.email_retorno` no Supabase + abre mailto
-   - Botao "Só salvar" → apenas arquiva no banco
-7. Assinatura da decisao final e sempre humana
-
----
-
-## 6. Stack tecnica
-
-- **Frontend:** HTML/CSS/JS puro (sem framework), Chart.js
-- **Backend:** Vercel Serverless Functions (Node.js 22)
-- **Banco:** Supabase (Postgres 15+)
-- **IA:** Anthropic API (Haiku/Sonnet/Opus)
-- **Fontes:** Poppins (display) + Inter (texto)
-- **Paleta Lagostao:** verde escuro #0A3332 + verde medio #15746E
-
-### Estrutura de arquivos
-
-```
-deploy-vercel/
-  index.html               # aplicacao principal (~6400 linhas)
-  vendedor.html            # link publico do vendedor
-  admin.html               # painel admin
-  logo-lagostao.png        # logo do cliente
-  lagostao-data.js         # base historica 93 clientes (planilha)
-  vercel.json              # rewrites, headers
-  package.json
-  supabase-schema.sql      # DDL do banco
-  supabase-rls.sql         # policies RLS
-  RELATORIO_ENTREGA.md     # este arquivo
-  api/                     # 12 serverless functions
-    admin/                 # config, consumo, historico-cliente
-    analisar-credito.js
-    chat.js                # /api/chat (assistente IA)
-    consulta.js            # adapter Serasa/CENPROT
-    cross-check.js         # anti-fraude
-    fichas.js              # CRUD Supabase
-    health.js
-    ocr-documento.js       # OCR + checksum CPF/CNPJ
-    processar-relatorio.js
-    sbtest.js              # rewrite /api/entrada-rapida
-  lib/                     # helpers server-side
-    anthropic.js
-    consumo.js
-    entidades.js
-    http.js
-    politica.js
-    supabase.js
-    validacao.js           # checksums CPF/CNPJ brasileiro
-    prompts/
-      analise-credito.js
-      entrada-rapida.js
-      ocr-documento.js
-      relatorio-cenprot.js
-      relatorio-serasa.js
-```
+### 6. Laudo final
+   - Botao "Gerar laudo" (canto inferior direito da ficha)
+   - Gera pagina com identidade Lagostao, dados do cliente, score em circulo, veredito, justificativa manual, campos de assinatura (Analista responsavel / Aprovacao gerencial / Gestor de credito)
+   - Pronto para impressao/PDF
 
 ---
 
-## 7. Features implementadas (v4.29)
+## PAGINAS PRINCIPAIS
 
-### Fluxo operacional
-- **Vendedor sem login** (`/vendedor.html`) — link publico, form simplificado, protocolo gerado
-- **Elves com login** — dashboard completo com dados reais do Supabase
-- **Quadro de avisos** na lateral direita — fichas do vendedor destacadas em verde
-- **Dashboard KPIs** — recebidas hoje, em analise, aguardando Serasa/CENPROT, aprovadas
-- **Fila Operacional** com filtros e ordenacao (setas asc/desc)
-- **Ficha completa**: score grande + 3 botoes decisao + timer SLA de 10 min
-- **Historico por cliente**
-- **Auditoria** (audit_trail) das mudancas
-- **Arquivar/Desarquivar** dinamico
-- **Anti-fraude:** cross-reference CPF/CNPJ/nome/endereco
-
-### Analise Comercial (v4.29) — aba dedicada
-- Base historica da planilha do cliente (93 clientes)
-- **Filtros interativos:** busca por cliente/CNPJ, vendedor, rota de saida, prazo, faixa de risco
-- **6 KPIs** que recalculam ao filtrar: Total analisado, Score medio, Ticket medio, Total limite, Dividas totais, Score < 500
-- **3 paineis clicaveis** (viram filtro):
-  - Vendedores (Artur Jesus, Heidi, Gabriel B, Brendon Souto, Michelle, Marcio, Aquiles, Ester Santos)
-  - Rota de saida (Lagostao, Global, JP)
-  - Faixas de risco (Baixo, Moderado, Elevado, Alto, Sem score)
-- **Tabela drill-down:** clicar em cliente abre modal com ficha historica completa (score, limite, capital, prospeccao, dividas, saidas, observacoes)
-
-### IA e OCR
-- OCR hibrido Haiku > Sonnet fallback
-- **Anti-alucinacao CPF/CNPJ via checksum brasileiro:**
-  - Prompt permissivo: IA extrai
-  - Backend valida algoritmo dos digitos verificadores
-  - Se checksum falha: campo volta vazio + observacao "digite manual"
-  - Cobre `cpf`, `cnpj`, `cpf_cnpj` unificado e socios
-- Processamento Serasa/CENPROT (paste texto ou upload PDF)
-- Cache de relatorios (30 dias)
-- **Assistente IA lateral** da ficha:
-  - Contexto automatico da ficha
-  - Seletor Haiku/Sonnet/Opus
-  - Campo pra chave propria opcional
-
-### Templates de email (v4.22/v4.27)
-- 2 templates prontos com assinatura Francisco Elves C.:
-  - **Aprovado** — cita CNPJ + perfil + limite + prazo
-  - **Somente a vista** — score abaixo do minimo + submeter Gestao em carater excecao
-- Botao "Gerar email de retorno" no veredito
-- Destinatario preenchido automaticamente com email_vendedor
-- Salvar+Enviar → grava `dados.email_retorno` no Supabase + abre mailto
-- Só salvar → arquiva no banco sem envio
-
-### Politica de credito (Lagostao)
-| Score | Risco | Acao |
-|---|---|---|
-| > 700 | Baixo | Liberacao padrao |
-| 601-700 | Moderado | Analise criteriosa, possivel reducao |
-| 501-600 | Elevado | Prazos reduzidos, garantia adicional |
-| < 500 | Alto | So a vista, excecao com Gestao |
-
-**Regras adicionais** (v4.22):
-- Restricao financeira relevante sobrepoe score
-- Protesto ativo exige analise gerencial
-- Documentacao incompleta impede aprovacao limpa
-- Bom historico interno permite flexibilizacao com Gestao
-
-### Prazos oferecidos (Lagostao)
-Multiplos de 7 dias, max 35: A vista / 7 / 14 / 21 / 28 / 35 / 7-14 / 14-21 / 21-28 / 14-21-28
-
-### Branding v4.21/v4.28
-- Cores verde escuro (#0A3332) + verde medio (#15746E)
-- Logo Lagostao no sidebar e login
-- Sidebar em gradient verde
-- Card "Visao geral da carteira" em verde
-- Login com fundo verde escuro
-
-### Documentos e entrada
-- Entrada rapida com copy/paste ou upload
-- Cards: Anexar / Digitar / Ver / Trocar
-- CPF/CNPJ divergente vira aviso (nao bloqueia)
-- MODO_TESTE ativo: nao trava em nenhuma etapa
-- Contrato social e socios: **opcionais**
-
-### Admin
-- Cap mensal Anthropic ajustavel
-- Switch IA on/off
-- Historico de consumo por dia
+- **Dashboard** — KPIs, volume diario, pipeline por status, distribuicao por risco, faixas de score, pendencias por tipo, analises recentes, quadro de avisos, alertas
+- **Fila Operacional** — todas as fichas (filtros: Pendentes / Hoje / Aguardando consulta / Pronto p/ revisao / Alto risco / Finalizadas / Aprovados / A vista / Arquivados / Todos + busca por nome/CNPJ/vendedor)
+- **Nova Analise** — wizard direto para o Elves criar analise manualmente sem passar pelo vendedor
+- **Analise Comercial (BI Lagostao)** — dashboard historico da planilha de 93 clientes:
+  - KPIs clicaveis (Total analisado, Vendedores ativos, Score medio, Clientes com limite, Ticket medio, Total limite, Maior limite, Dividas totais)
+  - 7 graficos Chart.js interativos (Rota de saida, Distribuicao de risco, Top vendedores, Score medio por vendedor, Ticket medio por vendedor, Score x Limite scatter, Risco por rota de saida, Distribuicao por tempo de atividade)
+  - Filtros: busca cliente/CNPJ, vendedor, rota de saida, prazo, faixa de risco
+  - Breadcrumb do filtro ativo no topo com botao "Ver lista" para rolar ate a tabela
+  - Tabela dos clientes filtrados clicavel (abre ficha historica)
+  - Exportar CSV
+- **Politica de Credito** — regras de score/risco/prazos
+- **Relatorios** — relatorios operacionais
+- **Laudo Final** — pagina de impressao do laudo
 
 ---
 
-## 8. Testes E2E validados (2026-07-02)
+## HISTORICO DE VERSOES DESTA ENTREGA
 
-| Etapa | Status |
-|---|---|
-| Health check | OK |
-| OCR texto livre + checksum | OK |
-| CPF invalido bloqueado | OK |
-| CPF valido aceito | OK |
-| CNPJ invalido bloqueado | OK |
-| CNPJ valido aceito | OK |
-| Ficha criada via vendedor.html | OK (protocolo 8D2AF6EB) |
-| Ficha aparece no quadro de avisos | OK |
-| Dashboard sem dados ficticios | OK |
-| Aba Analise Comercial com filtros | OK |
-| Drill-down cliente (modal) | OK |
-| Email de retorno + arquivamento Supabase | OK |
-
----
-
-## 9. Limites e custos
-
-| Item | Limite | Nota |
-|---|---|---|
-| Vercel Hobby | 12 serverless functions | NO LIMITE (12/12) |
-| Anthropic cap mensal | US$ 1.50 | Controlavel em `/admin.html`. Estourou = vira manual |
-| Supabase Free | 500 MB DB, 1 GB storage | Muita folga |
-| OCR por documento | ~US$ 0.02-0.10 | Depende do modelo |
+- **v4.20-21** — feedback do cliente: socios opcional, remover "valor de compra" redundante, rename Elvis -> Francisco Elves C., aplicar identidade Lagostao (verde #0A3332 e #15746E)
+- **v4.22** — templates de email do Francisco Elves C. (Aprovado + Somente a vista)
+- **v4.23-24** — vendedor.html publico + planilha 93 clientes (lagostao-data.js)
+- **v4.25-26** — quadro de avisos + KPIs painel + email retorno + arquivamento Supabase
+- **v4.27-28** — Analise Comercial em aba separada + cor Lagostao no sidebar
+- **v4.29** — dedicated BI tab com filtros interativos + drill-down cliente
+- **v4.30-32** — validacao CPF/CNPJ com checksum + auto-fill BrasilAPI em vendedor e Nova Analise
+- **v4.33** — prazo max 30 dias (7/14/21/30 + combos)
+- **v4.34** — BI Lagostao enriquecido com Chart.js + export CSV (bi-lagostao.js separado)
+- **v4.35** — KPIs clicaveis com modais de composicao/drill-down
+- **v4.36** — tudo clicavel (KPIs, tabelas, chart bars, scatter points) + fix busca CNPJ + fix vendedor.html hint + score/limite/prazo/textarea editaveis na ficha final
+- **v4.37** — persistencia Supabase completa (PUT /api/fichas?id=xxx correto + score/limite/prazo persistidos + endpoint expondo esses campos)
+- **v4.37b** — render pre-seleciona prazo salvo no dropdown
+- **v4.37c** — botao "Enviar retorno ao vendedor" no rodape da ficha nova (antes so tinha na wizard antiga) + email usa limite_aprovado/prazo_aprovado
+- **v4.38** — logo Lagostao ocupa a faixa toda no sidebar + breadcrumb do filtro ativo no BI + linhas das tabelas de drill-down (Total limite, Maior limite, Dividas, Sem limite) clicaveis abrindo ficha
+- **v4.38b** — laudo final mostra veredito + justificativa manual (fim do bug "null"), classificacao de risco correta (score>700 = Baixo, nao Moderado)
 
 ---
 
-## 10. Pendencias / proximos passos
+## CRITERIOS DE ACEITE — todos VERDES
 
-### Alta prioridade
-1. **Supabase Auth real** — trocar login localStorage por auth com sessao criptografada (~1h)
-2. **Integrar API Serasa e CENPROT** — hoje operador cola texto manual. Adapter pattern ja pronto
-3. **Envio email via Resend/SMTP** (opcional) — hoje usa mailto (abre webmail do operador). Automatizar = precisa chave Resend nas env vars
-4. **Upgrade Vercel Pro** (US$ 20/mes) se precisar mais que 12 functions
-
-### Media prioridade
-5. Multi-usuario (mais analistas alem do Elves)
-6. Notificacoes WhatsApp/email quando ficha decidida
-7. Refinar prompt de analise IA
-8. Upload de documento DENTRO da ficha existente (task #19 pendente)
-
-### Baixa prioridade
-9. Testes automatizados (Vitest, Playwright)
-10. Reforcar deploy script contra truncamento
-
----
-
-## 11. Bugs conhecidos
-
-Nenhum critico. Sistema estavel em v4.29.
+- [x] Ficha iniciada por copy/paste, PDF, imagem, ou preenchimento manual
+- [x] IA extrai dados sem inventar; campo sem evidencia = null
+- [x] CPF/CNPJ confirmado libera consulta imediatamente
+- [x] Serasa + CENPROT podem ser colados/upados quando nao ha API
+- [x] Sistema preparado para APIs futuras (Serasa/CENPROT oficiais)
+- [x] Relatorio Serasa/CENPROT validado contra CPF/CNPJ da ficha
+- [x] Resumo + sugestao em ate 10 minutos de fluxo total
+- [x] Decisao final continua HUMANA
+- [x] SLA de 10 minutos visivel/auditavel (timer por etapa)
+- [x] Anthropic key NAO aparece no frontend (Env Vars Vercel)
+- [x] Roda corretamente na Vercel
+- [x] Vendedor cria ficha via link publico sem login
+- [x] Elves recebe no quadro de avisos + fila
+- [x] Score/limite/prazo/justificativa persistem no Supabase
+- [x] Email de retorno usa valores APROVADOS (nao pretendidos)
+- [x] Laudo final mostra veredito + justificativa manual (nao mais "null")
+- [x] BI Lagostao com breadcrumb do filtro + ficha clicavel em todos os drills
+- [x] Logo Lagostao ocupa a faixa toda no sidebar
 
 ---
 
-## 12. Suporte pos-entrega
+## TESTES END-TO-END EXECUTADOS EM PRODUCAO (v4.38)
 
-- Codigo versionado em `github.com/issao2026/pescado-credito1`
-- Este relatorio + `CLAUDE.md` sao suficientes pra qualquer dev pegar o projeto
-- Memoria persistente do Claude carrega automaticamente o padrao de deploy em novas conversas
+1. **E2E-1:** vendedora Marcia Silva submeteu ficha do ITAU UNIBANCO S.A. via `/vendedor.html` — protocolo `5937F952` gerado
+2. **E2E-2:** ficha apareceu no quadro de avisos do Elves + na fila operacional
+3. **E2E-3:** Elves abriu ficha, preencheu score 850, limite 25.000,00, prazo 30 dias, justificativa manual
+4. **E2E-4:** clicou Aprovado, decisao persistida no Supabase (verificado via reload); gerou laudo com veredito "Aprovado" verde e "BAIXO RISCO"; gerou email para marcia@lagostaopescados.com.br com limite 25.000,00 e prazo 30 dias corretos
+5. **E2E-5:** fichas teste arquivadas, sistema limpo
 
-**Para Claude atualizar:** abrir Cowork com pasta `Pescado` selecionada. Memoria interna traz o padrao de deploy sozinha.
+Console de producao sem SyntaxError apos v4.37+.
 
 ---
 
-## 13. Historico de versoes
+## DEPLOY
 
-| Versao | Data | O que mudou |
-|---|---|---|
-| v4.29 | 02/07/2026 | Aba BI Lagostao (filtros interativos + drill-down cliente) |
-| v4.28 | 02/07/2026 | Cores verdes Lagostao no sidebar + card carteira + login |
-| v4.27 | 02/07/2026 | Email retorno volta pro vendedor + arquiva Supabase + quadro avisos lateral |
-| v4.26 | 02/07/2026 | Painel KPIs Lagostao (base historica 93 registros) |
-| v4.25 | 02/07/2026 | Quadro de avisos vendedor + zerar deltas ficticios |
-| v4.24 | 02/07/2026 | Apagar mocks ficticios + carregar fichas reais do Supabase |
-| v4.23 | 02/07/2026 | Pagina vendedor `/vendedor.html` + lagostao-data.js |
-| v4.22 | 02/07/2026 | Emails Francisco Elves C. + prazos 7-35 dias + operador |
-| v4.21 | 02/07/2026 | Branding Lagostao (verdes + logo header/login) |
-| v4.20 | 02/07/2026 | Fixes reuniao cliente: socios/contrato opcionais, sem trava |
-| v4.19 | 01/07/2026 | Anti-alucinacao CPF/CNPJ via checksum backend |
-| v4.17 | 30/06/2026 | Assistente IA modal na ficha (contexto + seletor modelo) |
-| v4.14 | 29/06/2026 | Fix _novaCache no header do passo 2 + repopulacao ao voltar |
-| v4.12 | 27/06/2026 | Deploy inicial da estrutura completa |
-| v4.6 | 25/06/2026 | Login cliente-side |
-| v4.0 | 20/06/2026 | Redesign editorial |
-| v3.x | 15/06/2026 | Ficha v2, drill-down, cross-reference anti-fraude |
-| v2.x | 05/06/2026 | Cache Serasa/CENPROT, admin panel |
-| v1.x | 20/05/2026 | MVP: OCR, dashboard, fila, Supabase |
+- Repositorio: `github.com/issao2026/pescado-credito1` (branch main)
+- Fluxo: **upload de arquivos no GitHub via Chrome MCP -> Vercel deploya automatico em ~1 min**
+- NUNCA usar `vercel` CLI, PowerShell nem `git push` por terminal
+- Issao mantem o Chrome logado no GitHub para uploads
+
+## LIMITES ATUAIS
+
+- **Vercel Hobby:** 12 serverless functions max (atual: 12 exatas, `sbtest.js` reaproveitado como `/api/entrada-rapida` via rewrite)
+- **Cap IA mensal:** US$ 1,50 (controlavel em `/admin.html`)
+- Quando o cap e atingido, sistema vira 100% manual (sem IA)
+
+## OBSERVACOES FINAIS
+
+- Login `pescado@teste.com / @pescado2026` e localStorage-based para o piloto. Recomendado migrar para Supabase Auth em versao futura se abrir para mais usuarios.
+- `LAGOSTAO_DATA` (93 clientes historicos) e usada apenas para o BI Comercial — nao interfere na operacao das fichas novas.
+- Todos os campos do veredito (score, limite, prazo, justificativa) sao PERSISTIDOS no Supabase e sobrevivem a reload.
+- Email de retorno fica arquivado na ficha em `dados.email_retorno` para auditoria.
+
+**Sistema em producao, testado end-to-end, pronto para uso do cliente.**
