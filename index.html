@@ -1572,13 +1572,13 @@ Vendedor: Carlos Menezes" style="min-height:160px;resize:vertical;width:100%;fon
  <div class="fg"><label>Operador da análise</label>
  <select id="fop"><option>Elvis</option></select>
  </div>
- <div class="fg"><label>Valor solicitado (R$) *</label><input id="fval" type="text" inputmode="decimal" data-moeda="1" placeholder="0,00"></div>
+ <div class="fg"><label>Valor solicitado (R$) *</label><input id="fval" type="text" inputmode="decimal" data-moeda="1" placeholder="Ex: 10.000,00"></div>
  <div class="fg"><label>Prazo solicitado</label>
  <select id="fp">
  <option>30 dias</option><option>30/60 dias</option><option>30/60/90 dias</option><option>60 dias</option><option>60/90 dias</option>
  </select>
  </div>
- <div class="fg"><label>Compra estimada mensal (R$)</label><input id="fe" type="text" inputmode="decimal" data-moeda="1" placeholder="0,00"></div>
+ <div class="fg"><label>Compra estimada mensal (R$)</label><input id="fe" type="text" inputmode="decimal" data-moeda="1" placeholder="Ex: 5.000,00"></div>
  <div class="fg full"><label>Observações</label><textarea id="fo" style="min-height:72px" placeholder="Histórico do relacionamento, contexto comercial, informações relevantes..."></textarea></div>
  </div>
  </div>
@@ -3496,14 +3496,12 @@ document.querySelectorAll('.mo').forEach(mo => {
  // ════════════════════════════════════════════════
  const DOCS_PJ = [
  { id: 'cartao_cnpj', nome: 'Cartao CNPJ', desc: 'Comprovante de inscricao no CNPJ atualizado', icone: '', critico: true, tipos_ocr: ['cartao_cnpj'] },
- { id: 'contrato_social', nome: 'Contrato Social', desc: 'Contrato social e ultimas alteracoes (consolidado)', icone: '', critico: true, tipos_ocr: ['contrato_social'] },
- { id: 'valor_compra_pj', nome: 'Valor de compra estimado', desc: 'Mensal ou semanal — define o limite pretendido', icone: '', critico: true, tipos_ocr: ['texto_livre'] },
+ { id: 'contrato_social', nome: 'Contrato Social', desc: 'Contrato social e ultimas alteracoes (consolidado)', icone: '', critico: false, tipos_ocr: ['contrato_social'] },
  { id: 'comprovante_end_pj', nome: 'Comprovante de endereco', desc: 'Conta de luz/agua/internet do endereco da empresa', icone: '', critico: false, tipos_ocr: ['comprovante_endereco'] },
  { id: 'referencias_pj', nome: 'Referencias comerciais', desc: 'Minimo 3 — fornecedores ou parceiros', icone: '', critico: false, tipos_ocr: ['texto_livre'] },
  ];
  const DOCS_PF = [
  { id: 'documento_id', nome: 'Documento de identificacao', desc: 'RG e CPF (ou CNH com foto)', icone: '', critico: true, tipos_ocr: ['documento_identificacao'] },
- { id: 'valor_compra_pf', nome: 'Valor de compra estimado', desc: 'Mensal ou semanal', icone: '', critico: true, tipos_ocr: ['texto_livre'] },
  { id: 'comprovante_res_pf', nome: 'Comprovante de residencia', desc: 'Conta recente no nome do solicitante', icone: '', critico: false, tipos_ocr: ['comprovante_endereco'] },
  { id: 'comprovante_renda_pf', nome: 'Comprovante de renda', desc: 'Holerite, extrato ou declaracao recente', icone: '', critico: false, tipos_ocr: ['comprovante_renda'] },
  { id: 'referencias_pf', nome: 'Referencias pessoais/comerciais', desc: 'Pelo menos 2 contatos de referencia', icone: '', critico: false, tipos_ocr: ['texto_livre'] },
@@ -3791,7 +3789,13 @@ document.querySelectorAll('.mo').forEach(mo => {
  const fn = document.getElementById('fn')?.value?.trim() || '';
  if (!fn) motivos.push('Nome/Razao Social');
  if (!fc || fc.length < 11) motivos.push('CPF/CNPJ valido');
- // Validar socios em PJ
+ // MODO_TESTE (v4.20): socios opcionais + nao bloqueia avanco em nenhuma etapa
+ // Cliente pediu na reuniao 2026-07-02: liberar fluxo pra testar sem preencher tudo
+ window.PESCADO_MODO_TESTE = true;
+ if (window.PESCADO_MODO_TESTE){
+   return { ok: true, motivos: [], modo_teste: true, pendencias: motivos };
+ }
+ // Validar socios em PJ (so quando MODO_TESTE=false)
  const vs = window.validarSocios ? window.validarSocios() : { ok: true };
  if (!vs.ok && vs.motivo) motivos.push(vs.motivo);
  return { ok: motivos.length === 0, motivos };
@@ -4312,8 +4316,9 @@ document.querySelectorAll('.mo').forEach(mo => {
  ${cardHTML('cenprot', 'Relatorio CENPROT / Cartorios', '', cen, 'var(--accent)')}
  </div>`;
 
- const podeAvancar = serOk && cenOk;
- const blockedByDoc = (ser?.confere_com_ficha === false) || (cen?.confere_com_ficha === false);
+ // v4.20 MODO_TESTE: libera avanco sem exigir Serasa/CENPROT
+ const podeAvancar = window.PESCADO_MODO_TESTE ? true : (serOk && cenOk);
+ const blockedByDoc = window.PESCADO_MODO_TESTE ? false : ((ser?.confere_com_ficha === false) || (cen?.confere_com_ficha === false));
 
  return `<div style="max-width:1000px">
  ${_stepBar(1)}
@@ -4842,7 +4847,7 @@ window.imprimirFichaAtual = function(){
   const corDec = (a.final||"").toLowerCase().indexOf("aprovad")>=0 ? "dec-ok" : (a.final||"").toLowerCase().indexOf("reprov")>=0 ? "dec-no" : "dec-warn";
   let body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha - ' + (a.nome||"") + '</title>' + css + '</head><body>';
   body += '<div class="head"><div><h1>Pescado Credito</h1><div style="font-size:11px;color:#6b7280">Ficha de analise de credito</div></div>';
-  body += '<div class="meta">Ficha #' + a.id + '<br>Data: ' + (a.dt||"--") + '<br>Operador: ' + (a.resp||"Elvis") + '</div></div>';
+  body += '<div class="meta">Ficha #' + a.id + '<br>Data: ' + (a.dt||"--") + '<br>Operador: ' + (a.resp||"Elves Silva") + '</div></div>';
   body += '<h2>Cliente</h2><table>';
   body += '<tr><td class="lbl">Nome / Razao Social</td><td><b>' + (a.nome||"--") + '</b></td></tr>';
   body += '<tr><td class="lbl">CPF / CNPJ</td><td style="font-family:monospace">' + (a.cnpj||"--") + '</td></tr>';
@@ -4873,7 +4878,7 @@ window.imprimirFichaAtual = function(){
   if(a.est){
     body += '<table style="margin-top:14px"><tr><td class="lbl">Limite sugerido</td><td><b>' + valor(a.est) + '</b></td></tr></table>';
   }
-  body += '<div class="assina"><div class="linha">Operador<br><span style="color:#111;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600;margin-top:4px;display:inline-block">' + (a.resp||"Elvis") + '</span></div>';
+  body += '<div class="assina"><div class="linha">Operador<br><span style="color:#111;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600;margin-top:4px;display:inline-block">' + (a.resp||"Elves Silva") + '</span></div>';
   body += '<div class="linha">Aprovacao gerencial</div></div>';
   body += '<div style="margin-top:30px;text-align:center;font-size:9px;color:#9ca3af">Documento gerado em ' + new Date().toLocaleString("pt-BR") + ' · Pescado Credito</div>';
   body += '<script>window.onload=()=>{setTimeout(()=>window.print(),300)}<' + '/script></body></html>';
