@@ -79,7 +79,13 @@ a[href^="mailto"], a[href^="tel"] { color:inherit !important; text-decoration:no
         <div class="fg"><label>Razão Social / Nome <span class="req">*</span></label><input id="c-nome" placeholder="Nome do cliente ou empresa" required></div>
       </div>
       <div class="grid2" style="margin-top:14px">
-        <div class="fg"><label>CNPJ / CPF <span class="req">*</span></label><input id="c-doc" placeholder="00.000.000/0000-00" required></div>
+        <div class="fg"><label>CNPJ / CPF <span class="req">*</span></label>
+          <div style="position:relative">
+            <input id="c-doc" placeholder="00.000.000/0000-00" required style="width:100%;padding-right:88px">
+            <div id="c-doc-status" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700"></div>
+          </div>
+          <div id="c-doc-msg" style="font-size:11px;margin-top:4px;color:var(--mu)"></div>
+        </div>
         <div class="fg"><label>Tipo <span class="req">*</span></label><select id="c-tipo"><option value="PJ">Pessoa Jurídica</option><option value="PF">Pessoa Física</option></select></div>
       </div>
       <div class="grid2" style="margin-top:14px">
@@ -147,6 +153,154 @@ function atualizarLista(){
 function removerArq(i){ arquivos.splice(i,1); atualizarLista(); }
 
 function fmtDoc(v){ return String(v||"").replace(/\D/g,""); }
+
+// Mascara CPF/CNPJ ao vivo
+function mascaraDoc(v){
+  var d = fmtDoc(v);
+  if (d.length <= 11){
+    // CPF: 000.000.000-00
+    d = d.slice(0,11);
+    if (d.length > 9) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2}).*/, "$1.$2.$3-$4");
+    if (d.length > 6) return d.replace(/^(\d{3})(\d{3})(\d{1,3}).*/, "$1.$2.$3");
+    if (d.length > 3) return d.replace(/^(\d{3})(\d{1,3}).*/, "$1.$2");
+    return d;
+  } else {
+    // CNPJ: 00.000.000/0000-00
+    d = d.slice(0,14);
+    if (d.length > 12) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2}).*/, "$1.$2.$3/$4-$5");
+    if (d.length > 8) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4}).*/, "$1.$2.$3/$4");
+    if (d.length > 5) return d.replace(/^(\d{2})(\d{3})(\d{1,3}).*/, "$1.$2.$3");
+    if (d.length > 2) return d.replace(/^(\d{2})(\d{1,3}).*/, "$1.$2");
+    return d;
+  }
+}
+
+// Validador CPF
+function validarCPF(cpf){
+  cpf = fmtDoc(cpf);
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  var soma = 0;
+  for (var i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i);
+  var dig1 = 11 - (soma % 11); if (dig1 >= 10) dig1 = 0;
+  if (dig1 !== parseInt(cpf[9])) return false;
+  soma = 0;
+  for (var i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i);
+  var dig2 = 11 - (soma % 11); if (dig2 >= 10) dig2 = 0;
+  return dig2 === parseInt(cpf[10]);
+}
+
+// Validador CNPJ
+function validarCNPJ(cnpj){
+  cnpj = fmtDoc(cnpj);
+  if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+  var pesos1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+  var pesos2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+  var soma = 0;
+  for (var i = 0; i < 12; i++) soma += parseInt(cnpj[i]) * pesos1[i];
+  var dig1 = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+  if (dig1 !== parseInt(cnpj[12])) return false;
+  soma = 0;
+  for (var i = 0; i < 13; i++) soma += parseInt(cnpj[i]) * pesos2[i];
+  var dig2 = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+  return dig2 === parseInt(cnpj[13]);
+}
+
+// Listener CPF/CNPJ
+var _autoFillFeito = false;
+document.getElementById("c-doc").addEventListener("input", function(e){
+  var d = fmtDoc(e.target.value);
+  e.target.value = mascaraDoc(e.target.value);
+  var status = document.getElementById("c-doc-status");
+  var msg = document.getElementById("c-doc-msg");
+  status.textContent = ""; msg.textContent = ""; msg.style.color = "var(--mu)";
+  _autoFillFeito = false;
+  if (d.length === 0) return;
+  if (d.length < 11){
+    status.textContent = d.length + "/11";
+    status.style.color = "var(--mu)";
+    return;
+  }
+  if (d.length === 11){
+    // CPF
+    document.getElementById("c-tipo").value = "PF";
+    if (validarCPF(d)){
+      status.textContent = "CPF OK";
+      status.style.color = "var(--ok)";
+    } else {
+      status.textContent = "CPF invalido";
+      status.style.color = "var(--err)";
+      msg.textContent = "Digito verificador nao confere";
+      msg.style.color = "var(--err)";
+    }
+    return;
+  }
+  if (d.length < 14){
+    status.textContent = d.length + "/14";
+    status.style.color = "var(--mu)";
+    return;
+  }
+  if (d.length === 14){
+    document.getElementById("c-tipo").value = "PJ";
+    if (validarCNPJ(d)){
+      status.textContent = "CNPJ OK";
+      status.style.color = "var(--ok)";
+      // Auto-preenchimento via BrasilAPI
+      autoPreencherCNPJ(d);
+    } else {
+      status.textContent = "CNPJ invalido";
+      status.style.color = "var(--err)";
+      msg.textContent = "Digito verificador nao confere";
+      msg.style.color = "var(--err)";
+    }
+  }
+});
+
+async function autoPreencherCNPJ(cnpj){
+  if (_autoFillFeito) return;
+  _autoFillFeito = true;
+  var msg = document.getElementById("c-doc-msg");
+  msg.textContent = "Buscando dados na Receita Federal...";
+  msg.style.color = "var(--acc)";
+  try {
+    var r = await fetch("https://brasilapi.com.br/api/cnpj/v1/" + cnpj);
+    if (!r.ok){
+      msg.textContent = "CNPJ valido mas nao encontrado na Receita";
+      msg.style.color = "var(--mu)";
+      return;
+    }
+    var j = await r.json();
+    // Preencher campos vazios
+    var nome = j.razao_social || j.nome_fantasia || "";
+    if (nome && !document.getElementById("c-nome").value){
+      document.getElementById("c-nome").value = nome;
+    }
+    var email = j.email || j.ddd_telefone_1 || "";
+    if (j.email && !document.getElementById("c-email").value){
+      document.getElementById("c-email").value = j.email;
+    }
+    var tel = j.ddd_telefone_1 || "";
+    if (tel && !document.getElementById("c-tel").value){
+      document.getElementById("c-tel").value = "(" + tel.slice(0,2) + ") " + tel.slice(2);
+    }
+    var obsAtual = document.getElementById("c-obs").value.trim();
+    var info = [];
+    if (j.razao_social) info.push("Razao: " + j.razao_social);
+    if (j.nome_fantasia) info.push("Fantasia: " + j.nome_fantasia);
+    if (j.data_inicio_atividade) info.push("Fundacao: " + j.data_inicio_atividade);
+    if (j.capital_social) info.push("Capital: R$ " + Number(j.capital_social).toLocaleString("pt-BR"));
+    if (j.municipio && j.uf) info.push("Cidade: " + j.municipio + "/" + j.uf);
+    if (j.descricao_situacao_cadastral) info.push("Situacao: " + j.descricao_situacao_cadastral);
+    if (j.cnae_fiscal_descricao) info.push("Atividade: " + j.cnae_fiscal_descricao);
+    if (info.length && !obsAtual.includes("Razao:")){
+      document.getElementById("c-obs").value = (obsAtual ? obsAtual + "\n\n" : "") + "--- Dados Receita ---\n" + info.join("\n");
+    }
+    msg.textContent = "Dados preenchidos automaticamente da Receita";
+    msg.style.color = "var(--ok)";
+  } catch(e){
+    msg.textContent = "CNPJ valido (BrasilAPI indisponivel)";
+    msg.style.color = "var(--mu)";
+  }
+}
 
 async function enviar(){
   const err = document.getElementById("err-box");
