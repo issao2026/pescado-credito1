@@ -76,8 +76,13 @@ a { text-decoration:none; color:inherit; }
 .pg-title { font-size:15px; font-weight:700; color:var(--txt); }
 .pg-crumb { font-size:12px; color:var(--txt3); display:flex; align-items:center; gap:5px; }
 .tb-right { display:flex; align-items:center; gap:10px; }
-.tb-alerts { position:relative; width:32px; height:32px; border-radius:var(--r6); display:flex; align-items:center; justify-content:center; background:var(--surf); border:1px solid var(--bdr); cursor:pointer; font-size:14px; }
-.tb-dot { position:absolute; top:5px; right:5px; width:7px; height:7px; background:var(--R); border-radius:50%; border:1.5px solid var(--card); }
+/* v4.40: sino de notificacao com contador de fichas para aprovar */
+.tb-alerts { position:relative; width:38px; height:38px; border-radius:var(--r6); display:flex; align-items:center; justify-content:center; background:var(--surf); border:1px solid var(--bdr); cursor:pointer; color:#003030; transition:all .15s; }
+.tb-alerts:hover { background:#003030; color:#fff; border-color:#003030; }
+.tb-alerts svg { width:20px; height:20px; }
+.tb-badge { position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 6px; background:#DC2626; color:#fff; border-radius:10px; border:2px solid #fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; box-shadow:0 2px 6px rgba(220,38,38,.35); }
+.tb-badge.zero { display:none; }
+.tb-dot { display:none; }
 
 /* ── BUTTONS ─────────────────────────────────── */
 .btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:50px; font-size:12.5px; font-weight:600; transition:all .12s; }
@@ -683,10 +688,10 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  </div>
  <div class="sb-ft">
  <div class="sb-usr">
- <div class="sb-av">IY</div>
+ <div class="sb-av">FE</div>
  <div>
- <div class="sb-un">Issao Yokoi</div>
- <div class="sb-ur">Administrador</div>
+ <div class="sb-un">Francisco Elves</div>
+ <div class="sb-ur">Analista de Credito</div>
  </div>
  </div>
  </div>
@@ -699,7 +704,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <div class="pg-title" id="pg-title">Dashboard</div>
  </div>
  <div class="tb-right">
- <div class="tb-alerts"><span></span><div class="tb-dot"></div></div>
+ <div class="tb-alerts" id="tb-alerts" title="Fichas aguardando analise" onclick="nav('fila')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span id="tb-badge" class="tb-badge zero">0</span></div>
  <button class="btn btn-s btn-sm" onclick="nav('fila')">Ver fila</button>
  <button class="btn btn-p btn-sm" onclick="nav('nova')">+ Nova análise</button>
  </div>
@@ -997,11 +1002,21 @@ function render() {
  afterRender();
  // v4.24: sync contador da fila com dado real
  try {
+   var _pendentes = (window.D?.analyses||[]).filter(a => !a.final || a.final === '—').length;
    var _ctFila = document.getElementById('ct-fila');
    if (_ctFila) {
-     var pendentes = (window.D?.analyses||[]).filter(a => !a.final || a.final === '—').length;
-     _ctFila.textContent = pendentes;
-     _ctFila.style.display = pendentes > 0 ? '' : 'none';
+     _ctFila.textContent = _pendentes;
+     _ctFila.style.display = _pendentes > 0 ? '' : 'none';
+   }
+   // v4.40: sino de notificacao no topbar
+   var _bell = document.getElementById('tb-badge');
+   if (_bell){
+     _bell.textContent = _pendentes > 99 ? '99+' : _pendentes;
+     _bell.classList.toggle('zero', _pendentes === 0);
+   }
+   var _bellBox = document.getElementById('tb-alerts');
+   if (_bellBox){
+     _bellBox.title = _pendentes === 0 ? 'Nenhuma ficha aguardando' : _pendentes + ' ficha' + (_pendentes>1?'s':'') + ' aguardando analise';
    }
  } catch(e){}
 }
@@ -5778,7 +5793,7 @@ window.imprimirFichaAtual = function(){
     if (scoreInput){ a.score = parseInt(scoreInput,10) || a.score; }
     if (limiteInput){ a.limite_aprovado = limiteInput; }
     if (prazoInput){ a.prazo_aprovado = prazoInput; }
-    a.decisao_user = (window.PESCADO_USER && window.PESCADO_USER.nome) || "Issao Yokoi";
+    a.decisao_user = (window.PESCADO_USER && window.PESCADO_USER.nome) || "Francisco Elves";
     a.decisao_dt = new Date().toISOString();
 
     // Atualiza tambem o status pra refletir
