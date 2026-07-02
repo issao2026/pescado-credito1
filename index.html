@@ -4895,10 +4895,29 @@ document.querySelectorAll('.mo').forEach(mo => {
  <button onclick="document.getElementById('mo-rel').remove()" style="border:none;background:transparent;font-size:22px;cursor:pointer">×</button>
  </div>
 
- <div id="rel-tabs" style="display:flex;gap:4px;border-bottom:2px solid var(--bdr);margin-bottom:14px">
- <button class="rel-tab" data-tab="texto" style="padding:8px 14px;border:none;background:transparent;font-weight:700;font-size:12px;cursor:pointer;border-bottom:2px solid var(--P);color:var(--P);margin-bottom:-2px">Digitar texto</button>
+ <div id="rel-tabs" style="display:flex;gap:4px;border-bottom:2px solid var(--bdr);margin-bottom:14px;flex-wrap:wrap">
+ <button class="rel-tab" data-tab="manual" style="padding:8px 14px;border:none;background:transparent;font-weight:700;font-size:12px;cursor:pointer;border-bottom:2px solid var(--P);color:var(--P);margin-bottom:-2px">Preencher a mao</button>
+ <button class="rel-tab" data-tab="texto" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:var(--txt2)">Colar texto (IA extrai)</button>
  <button class="rel-tab" data-tab="imagem" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:var(--txt2)"> Colar imagem (Ctrl+V)</button>
  <button class="rel-tab" data-tab="arquivo" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:var(--txt2)"> Upload arquivo</button>
+ </div>
+ <!-- v4.40: preenchimento manual sem IA -->
+ <div id="rel-pane-manual">
+ ${tipo === 'serasa' ? `
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+     <div><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Score</label><input id="rel-m-score" type="number" min="0" max="1000" placeholder="Ex: 720" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:14px;font-weight:700"></div>
+     <div><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">CPF/CNPJ do relatorio</label><input id="rel-m-doc" type="text" placeholder="mesmo da ficha" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px"></div>
+     <div style="grid-column:span 2"><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Restricoes / apontamentos</label><textarea id="rel-m-rest" rows="3" placeholder="Ex: Nada consta. Ou: 1 anotacao R$ 850,00 no Bradesco em 15/03/2025" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;resize:vertical"></textarea></div>
+     <div style="grid-column:span 2"><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Pendencias financeiras / Cheques sem fundo (CCF)</label><textarea id="rel-m-pend" rows="2" placeholder="Ex: Nada consta." style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;resize:vertical"></textarea></div>
+   </div>` : `
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+     <div><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Existe protesto?</label><select id="rel-m-tem-prot" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:14px;font-weight:700"><option value="nao">Nao — Nada consta</option><option value="sim">Sim, existe protesto</option></select></div>
+     <div><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">CPF/CNPJ do relatorio</label><input id="rel-m-doc-c" type="text" placeholder="mesmo da ficha" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px"></div>
+     <div><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Quantidade de protestos</label><input id="rel-m-qtd" type="number" min="0" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:14px"></div>
+     <div><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Valor total (R$)</label><input id="rel-m-val" type="text" placeholder="0,00" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:14px"></div>
+     <div style="grid-column:span 2"><label style="font-size:11px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Detalhes (cartorio, cidade/UF, data)</label><textarea id="rel-m-det" rows="3" placeholder="Ex: 1o Tabelionato de Sao Paulo/SP, protesto de 12/03/2025, R$ 5.400,00" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;resize:vertical"></textarea></div>
+   </div>`}
+   <div style="font-size:11px;color:var(--txt3);margin-top:10px">Preenchimento manual sem IA. Nao consome credito. Fica registrado como "origem: manual".</div>
  </div>
 
  <div id="rel-pane-texto">
@@ -5008,6 +5027,51 @@ document.querySelectorAll('.mo').forEach(mo => {
 
  // Confirmar
  document.getElementById('rel-confirmar').addEventListener('click', () => {
+ // v4.40: modo manual - salva direto sem IA
+ if (modo === 'manual'){
+   const docFicha = (document.getElementById('fc')?.value || '').replace(/\D/g,'');
+   let fields, alerts = [];
+   if (tipo === 'serasa'){
+     const score = parseInt(document.getElementById('rel-m-score')?.value || '0', 10);
+     const doc = (document.getElementById('rel-m-doc')?.value || '').replace(/\D/g,'') || docFicha;
+     const rest = (document.getElementById('rel-m-rest')?.value || '').trim() || 'Nada consta';
+     const pend = (document.getElementById('rel-m-pend')?.value || '').trim() || 'Nada consta';
+     if (!score || score < 0 || score > 1000){ toast('Score invalido (0 a 1000).'); return; }
+     fields = [
+       { key:'Score Serasa', val: score, conf: 100 },
+       { key:'Restricoes', val: rest, conf: 100 },
+       { key:'Pendencias', val: pend, conf: 100 },
+       { key:'CPF/CNPJ consultado', val: doc, conf: 100 },
+     ];
+     if (doc && docFicha && doc !== docFicha){ alerts.push('CPF/CNPJ do relatorio nao bate com a ficha'); }
+   } else {
+     const temProt = document.getElementById('rel-m-tem-prot')?.value === 'sim';
+     const doc = (document.getElementById('rel-m-doc-c')?.value || '').replace(/\D/g,'') || docFicha;
+     const qtd = parseInt(document.getElementById('rel-m-qtd')?.value || '0', 10);
+     const val = (document.getElementById('rel-m-val')?.value || '').trim();
+     const det = (document.getElementById('rel-m-det')?.value || '').trim() || (temProt ? '(sem detalhes)' : 'Nada consta');
+     fields = [
+       { key:'Protesto ativo', val: temProt ? 'Sim' : 'Nao', conf: 100 },
+       { key:'Quantidade de protestos', val: qtd, conf: 100 },
+       { key:'Valor total', val: val || '0', conf: 100 },
+       { key:'Detalhes', val: det, conf: 100 },
+       { key:'CPF/CNPJ consultado', val: doc, conf: 100 },
+     ];
+     if (doc && docFicha && doc !== docFicha){ alerts.push('CPF/CNPJ do relatorio nao bate com a ficha'); }
+   }
+   window.PESCADO_RELATORIOS[tipo] = {
+     fields: fields,
+     alerts: alerts,
+     origem: 'manual',
+     confere_com_ficha: alerts.length === 0,
+     _manual: true
+   };
+   document.removeEventListener('paste', docPasteHandler);
+   document.getElementById('mo-rel').remove();
+   toast('Relatorio ' + (tipo==='serasa'?'Serasa':'CENPROT') + ' preenchido manualmente');
+   nav('nova');
+   return;
+ }
  let opts = null;
  if (modo === 'texto'){
  const t = document.getElementById('rel-texto').value.trim();
@@ -5023,6 +5087,19 @@ document.querySelectorAll('.mo').forEach(mo => {
  document.removeEventListener('paste', docPasteHandler);
  document.getElementById('mo-rel').remove();
  processarRelatorio(tipo, opts);
+ });
+
+ // v4.40: expandir tab swap para incluir 'manual'
+ const _origTabHandler = document.querySelectorAll('#rel-tabs .rel-tab');
+ _origTabHandler.forEach(btn => {
+   btn.addEventListener('click', () => {
+     const tab = btn.dataset.tab;
+     ['manual','texto','imagem','arquivo'].forEach(t => {
+       const p = document.getElementById('rel-pane-' + t);
+       if (p) p.style.display = (t === tab) ? 'block' : 'none';
+     });
+     document.getElementById('rel-confirmar').textContent = tab === 'manual' ? 'Salvar preenchimento manual' : 'Processar com IA';
+   });
  });
  };
 
@@ -5143,12 +5220,28 @@ document.querySelectorAll('.mo').forEach(mo => {
  ${a && a._processando ? '<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:20px;text-align:center;font-size:13px;color:#92400E"> IA analisando dados...</div>' : ''}
 
  ${!a ? `
- <div style="background:#fff;border:1px solid var(--bdr);border-radius:12px;padding:30px;text-align:center;margin-bottom:16px">
- <div style="font-size:48px;margin-bottom:12px"></div>
- <div style="font-size:16px;font-weight:700;margin-bottom:6px">Pronto para analisar</div>
- <div style="font-size:12px;color:var(--txt3);margin-bottom:18px">A IA vai consolidar documentos, relatorios Serasa/CENPROT e gerar resumo executivo + sugestao de credito</div>
- <button class="btn btn-p" onclick="gerarAnaliseFinalUI()" style="font-size:14px;padding:10px 24px" ${(!ser?.fields||!cen?.fields) ? 'disabled style="opacity:.5"' : ''}> Gerar analise com IA</button>
- ${(!ser?.fields||!cen?.fields) ? '<div style="font-size:11px;color:var(--R);margin-top:8px">Falta relatorio ' + (!ser?.fields?'Serasa':'') + (!ser?.fields&&!cen?.fields?' e ':'') + (!cen?.fields?'CENPROT':'') + '</div>' : ''}
+ <div style="background:#fff;border:1px solid var(--bdr);border-radius:12px;padding:26px;margin-bottom:16px">
+ <div style="text-align:center;margin-bottom:20px">
+   <div style="font-size:16px;font-weight:700;margin-bottom:6px">Pronto para analisar</div>
+   <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Escolha: gerar analise automatica com IA OU escrever o parecer manualmente (colar o texto do ChatGPT, por exemplo)</div>
+   <button class="btn btn-p" onclick="gerarAnaliseFinalUI()" style="font-size:14px;padding:10px 24px" ${(!ser?.fields||!cen?.fields) ? 'disabled style="opacity:.5"' : ''}>Gerar analise com IA</button>
+   ${(!ser?.fields||!cen?.fields) ? '<div style="font-size:11px;color:var(--R);margin-top:8px">IA precisa dos relatorios Serasa e CENPROT. Falta ' + (!ser?.fields?'Serasa':'') + (!ser?.fields&&!cen?.fields?' e ':'') + (!cen?.fields?'CENPROT':'') + '. Use o parecer manual abaixo.</div>' : ''}
+ </div>
+ <!-- v4.40: parecer manual do analista -->
+ <div style="border-top:1px dashed var(--bdr);padding-top:18px">
+   <div style="font-size:13px;font-weight:700;color:#003030;margin-bottom:6px">OU escreva o parecer manualmente</div>
+   <div style="font-size:11px;color:var(--txt3);margin-bottom:10px">Cole o parecer do ChatGPT, escreva de proprio punho, ou anote a analise de risco. Vira o resumo executivo da ficha.</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+     <div><label style="font-size:10px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px">Risco classificado</label><select id="par-risco" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;font-weight:700"><option value="Baixo">Baixo</option><option value="Moderado" selected>Moderado</option><option value="Elevado">Elevado</option><option value="Alto">Alto</option></select></div>
+     <div><label style="font-size:10px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px">Sugestao de acao</label><select id="par-acao" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;font-weight:700"><option value="aprovar">Aprovar</option><option value="aprovar_com_restricoes">Aprovar com restricoes</option><option value="somente_a_vista">Somente a vista</option><option value="submeter_gerencia">Submeter a gerencia</option><option value="reprovar">Reprovar</option></select></div>
+     <div><label style="font-size:10px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px">Limite sugerido (R$)</label><input id="par-limite" type="text" placeholder="Ex: 15.000,00" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px"></div>
+   </div>
+   <label style="font-size:10px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px">Parecer / resumo executivo</label>
+   <textarea id="par-texto" rows="8" placeholder="Cole aqui o parecer do ChatGPT ou escreva a analise. Ex.: Cliente com bom historico, capital social compativel, sem restricoes. Sugerido limite R$ 15.000,00 em 30 dias..." style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;resize:vertical"></textarea>
+   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+     <button class="btn btn-p" onclick="salvarParecerManual()" style="background:#003030;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">Salvar parecer manual</button>
+   </div>
+ </div>
  </div>
  ` : ''}
 
@@ -5164,6 +5257,46 @@ document.querySelectorAll('.mo').forEach(mo => {
  </div>`;
  }
  window._pgNovaStep2 = _pgNovaStep2V2;
+
+ // v4.40: salvar parecer manual sem IA
+ window.salvarParecerManual = function(){
+   const texto = (document.getElementById('par-texto')?.value || '').trim();
+   if (texto.length < 20){ toast('Escreva um parecer com pelo menos 20 caracteres.'); return; }
+   const risco = document.getElementById('par-risco')?.value || 'Moderado';
+   const acao = document.getElementById('par-acao')?.value || 'aprovar';
+   const limiteStr = (document.getElementById('par-limite')?.value || '').trim();
+   const limiteNum = parseFloat(limiteStr.replace(/\./g,'').replace(',','.')) || 0;
+   const ser = window.PESCADO_RELATORIOS?.serasa;
+   const cen = window.PESCADO_RELATORIOS?.cenprot;
+   const score = ser?.fields?.find(f=>String(f.key).toLowerCase().includes('score'))?.val || null;
+   const cpfCnpj = (document.getElementById('fc')?.value || '').replace(/\D/g,'');
+   window.PESCADO_ANALISE_FINAL = {
+     resumo_executivo: texto,
+     risco: { classificacao: risco.toLowerCase(), motivos: [], fatores_positivos: [], fatores_negativos: [], inconsistencias: [] },
+     sugestao_credito: {
+       acao: acao,
+       limite_sugerido: limiteNum || null,
+       prazo_sugerido: document.getElementById('fp')?.value || null,
+       condicoes_sugeridas: [],
+       necessita_aprovacao_gerencial: (acao === 'submeter_gerencia'),
+       justificativa: texto.slice(0, 300)
+     },
+     cliente: {
+       tipo_pessoa: document.getElementById('ft')?.value || 'indeterminado',
+       nome_razao_social: document.getElementById('fn')?.value || '',
+       cpf_cnpj: cpfCnpj,
+     },
+     documentacao: { status: 'completa', documentos_recebidos: [], documentos_ausentes: [], pendencias_que_bloqueiam: [], pendencias_que_nao_bloqueiam: [] },
+     consultas: {
+       serasa: ser ? { origem: ser.origem || 'manual', score: score, confere_com_ficha: ser.confere_com_ficha !== false } : { origem: 'nao_informado' },
+       cenprot: cen ? { origem: cen.origem || 'manual', confere_com_ficha: cen.confere_com_ficha !== false } : { origem: 'nao_informado' }
+     },
+     origem_analise: 'manual',
+     pendencias_para_decisao_humana: []
+   };
+   toast('Parecer manual salvo. Prossiga pro veredito.');
+   nav('nova');
+ };
 
  window.gerarAnaliseFinalUI = async function(){
  PESCADO_ANALISE_FINAL = { _processando: true };
