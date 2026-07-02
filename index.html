@@ -966,11 +966,15 @@ function serasaPill(s) {
  return `<span class="pill ${c}" style="font-size:9.5px">${s}</span>`;
 }
 function justif(a) {
+ // v4.38: tolera prot/rest nulos + prioriza justificativa manual do operador
+ if (a && (a.justificativa || a.observacoes)) return a.justificativa || a.observacoes;
  if (!a.score) return 'Análise incompleta — aguardando consulta Serasa e documentação completa.';
- if (a.score>700&&a.prot===0&&a.rest===0) return `Score ${a.score} dentro da faixa de baixo risco. Sem protestos ou restrições identificadas. Documentação ${a.docSt.toLowerCase()}. Perfil compatível com concessão nos termos solicitados.`;
- if (a.score>600) return `Score ${a.score} — risco moderado. Recomenda-se análise criteriosa do limite (${R$(a.valor)}) vs. compra estimada mensal (${R$(a.est)}). Verificar referências comerciais.`;
- if (a.score>500) return `Score ${a.score} — risco elevado. ${a.prot>0?`${a.prot} protesto(s) ativo(s) identificado(s). `:''}Caso requer análise gerencial. Sugerido redução de limite e/ou prazo condicionado a garantias adicionais.`;
- return `Score ${a.score} — alto risco. ${a.prot>0?`${a.prot} protesto(s) ativo(s). `:''}${a.rest>0?`${a.rest} restrição(ões) financeiras. `:''}Concessão de crédito não recomendada. Operação à vista. Exceção somente com aprovação formal da gestão.`;
+ var prot = a.prot||0, rest = a.rest||0, docSt = (a.docSt||'pendente').toLowerCase();
+ if (a.score>700 && prot===0 && rest===0) return `Score ${a.score} dentro da faixa de baixo risco. Sem protestos ou restrições identificadas. Documentação ${docSt}. Perfil compatível com concessão nos termos solicitados.`;
+ if (a.score>700) return `Score ${a.score} de baixo risco, mas com ${prot} protesto(s) e ${rest} restrição(ões) — atenção antes de liberar limite integral.`;
+ if (a.score>600) return `Score ${a.score} — risco moderado. Recomenda-se análise criteriosa do limite (${R$(a.valor)}) vs. compra estimada mensal (${R$(a.est||0)}). Verificar referências comerciais.`;
+ if (a.score>500) return `Score ${a.score} — risco elevado. ${prot>0?`${prot} protesto(s) ativo(s) identificado(s). `:''}Caso requer análise gerencial. Sugerido redução de limite e/ou prazo condicionado a garantias adicionais.`;
+ return `Score ${a.score} — alto risco. ${prot>0?`${prot} protesto(s) ativo(s). `:''}${rest>0?`${rest} restrição(ões) financeiras. `:''}Concessão de crédito não recomendada. Operação à vista. Exceção somente com aprovação formal da gestão.`;
 }
 
 // ══════════════════════════════════════
@@ -3512,13 +3516,15 @@ function pgLaudo() {
  </div>
  <div style="margin-bottom:20px">
  <div style="font-size:16px;font-weight:700;margin-bottom:12px">Resultado da análise</div>
- <div style="background:${a.risco==='Baixo'?'#D1FAE5':a.risco==='Moderado'?'#FEF3C7':a.risco==='Elevado'?'#FED7AA':'#FEE2E2'};border-radius:8px;padding:16px;display:flex;gap:16px;align-items:center">
- <div style="font-size:28px">${a.risco==='Baixo'?'':a.risco==='Moderado'?'️':a.risco==='Elevado'?'':''}</div>
- <div>
- <div style="font-weight:800;font-size:15px;color:${a.risco==='Baixo'?'#065F46':a.risco==='Moderado'?'#92400E':'#991B1B'}">${a.recIA}</div>
- <div style="font-size:12px;color:var(--txt2);margin-top:4px">${justif(a)}</div>
- </div>
- </div>
+ ${(function(){
+   // v4.38: classifica risco pelo score real se nao ha risco definido; usa veredito ao inves de recIA quando ha decisao
+   var risco = a.risco;
+   if ((!risco || risco==='Pendente') && a.score){ risco = a.score>700?'Baixo':a.score>=601?'Moderado':a.score>=501?'Elevado':'Alto'; }
+   var titulo = a.decisao_final || a.final || a.recIA || (a.score?('Score ' + a.score + ' - ' + (risco||'analisar').toLowerCase()):'Aguardando análise');
+   var bg = risco==='Baixo'?'#D1FAE5':risco==='Moderado'?'#FEF3C7':risco==='Elevado'?'#FED7AA':risco==='Alto'?'#FEE2E2':'#F3F4F6';
+   var fg = risco==='Baixo'?'#065F46':risco==='Moderado'?'#92400E':risco==='Elevado'?'#7C2D12':risco==='Alto'?'#991B1B':'#374151';
+   return '<div style="background:' + bg + ';border-radius:8px;padding:16px;display:flex;gap:16px;align-items:center"><div><div style="font-weight:800;font-size:15px;color:' + fg + '">' + titulo + '</div><div style="font-size:12px;color:var(--txt2);margin-top:4px">' + justif(a) + '</div></div></div>';
+ })()}
  </div>
  ${a.alerts.length>0?`<div style="margin-bottom:20px"><div style="font-size:14px;font-weight:700;margin-bottom:10px">Alertas identificados</div>${a.alerts.map(al=>`<div style="padding:8px 12px;background:#FEF3C7;border-radius:6px;font-size:12px;color:#92400E;margin-bottom:6px"> ${al}</div>`).join('')}</div>`:''}
  <div style="border-top:1px solid var(--bdr);padding-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px">
