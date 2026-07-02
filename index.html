@@ -5581,6 +5581,19 @@ window.imprimirFichaAtual = function(){
     h += btnDec('Somente a vista',     '#2E2B3A', 'Somente a vista',     false);
     h += btnDec('Inconclusivo',        '#2E2B3A', 'Inconclusivo',        false);
     h += '</div>';
+
+    // v4.37c: botoes de gerar email de retorno (aparecem so apos decisao; usam limite_aprovado/prazo_aprovado do banco)
+    if (decisaoFinal){
+      var tipoEmail = (decisaoFinal.indexOf('Aprovado') === 0 || decisaoFinal.indexOf('gerencia') >= 0) ? 'aprovado' : 'a_vista';
+      var rotuloEmail = tipoEmail === 'aprovado' ? 'Enviar retorno ao vendedor (Aprovado)' : 'Enviar retorno ao vendedor (Somente a vista)';
+      var bgEmail = tipoEmail === 'aprovado' ? '#15746E' : '#7c2d12';
+      var Q = String.fromCharCode(39); // aspa simples
+      var jsInline = 'if(typeof state!==' + Q + 'undefined' + Q + '&&state){state.openA=(window.D&&D.analyses||[]).find(function(x){return x.id===' + Q + a.id + Q + '||x._dbId===' + Q + a.id + Q + ';});} gerarEmailRetorno(' + Q + tipoEmail + Q + ')';
+      h += '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed #D6D2CB;display:flex;gap:8px;flex-wrap:wrap">';
+      h += '<button onclick="' + jsInline + '" style="flex:1;min-width:220px;background:' + bgEmail + ';color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer">' + rotuloEmail + '</button>';
+      h += '</div>';
+    }
+
     h += '</div>';
 
     return h;
@@ -6418,9 +6431,10 @@ window.gerarEmailRetorno = function(tipo){
     if (!a && window.D && window.D.analyses){ a = window.D.analyses[0]; }
     var cnpj = (a && (a.cnpj || a.cpf_cnpj)) || document.getElementById("fc")?.value || "";
     var nome = (a && (a.nome || a.razao_social)) || document.getElementById("fn")?.value || "";
-    var score = (a && a.score) || document.getElementById("rep-score")?.value || "";
-    var limite = document.getElementById("rep-limite")?.value || (a && a.valor) || "";
-    var prazo = document.getElementById("rep-prazo")?.value || (a && a.prazo) || "14 dias";
+    // v4.37c: prioridade -> campos do rep-* > limite_aprovado/prazo_aprovado salvos > valor pretendido
+    var score = document.getElementById("rep-score")?.value || (a && a.score) || "";
+    var limite = document.getElementById("rep-limite")?.value || (a && a.limite_aprovado) || (a && a.valor) || "";
+    var prazo = document.getElementById("rep-prazo")?.value || (a && a.prazo_aprovado) || (a && a.prazo) || "14 dias";
     var emailVendedor = (a && a.dados && (a.dados.email_vendedor || a.dados.email_cliente)) || "";
     var nomeVendedor = (a && (a.vendedor || (a.dados && a.dados.vendedor))) || "";
     var fichaId = a && (a._dbId || a.id) || null;
