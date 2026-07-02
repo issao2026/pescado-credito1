@@ -50,14 +50,13 @@ a { text-decoration:none; color:inherit; }
 #main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
 
 /* ── SIDEBAR ─────────────────────────────────── */
-/* v4.40: layout compacto igual vendedor.html — logo pequeno + texto ao lado */
-.sb-top { padding:14px 14px 14px; border-bottom:1px solid rgba(255,255,255,.05); }
-.sb-brand { display:flex; align-items:center; gap:10px; text-align:left; }
-/* v4.40b: fundo transparente para o logo funde com a barra */
-.sb-mark { width:44px; height:44px; background:transparent; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+/* v4.40e: logo GRANDE em cima ocupando a faixa toda, texto embaixo */
+.sb-top { padding:14px 10px 14px; border-bottom:1px solid rgba(255,255,255,.05); }
+.sb-brand { display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+.sb-mark { width:100%; max-width:180px; height:auto; aspect-ratio:1/1; background:transparent; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
 .sb-mark img { width:100%; height:100%; object-fit:contain; }
-.sb-name { color:#fff; font-family:'Poppins',sans-serif; font-size:15px; font-weight:700; letter-spacing:.1px; line-height:1.2; }
-.sb-sub { color:rgba(255,255,255,.55); font-size:9.5px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
+.sb-name { color:#fff; font-family:'Poppins',sans-serif; font-size:16px; font-weight:700; letter-spacing:.1px; line-height:1.2; }
+.sb-sub { color:rgba(255,255,255,.55); font-size:10px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
 .sb-nav { flex:1; padding:12px 8px; overflow-y:auto; }
 .nav-grp { margin-bottom:20px; }
 .nav-grp-lbl { color:rgba(255,255,255,.22); font-size:9.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; padding:0 8px 8px; }
