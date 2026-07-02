@@ -5638,22 +5638,31 @@ window.imprimirFichaAtual = function(){
       try { window.openAnalise(fichaId); } catch(e){ console.warn("[v4.8] re-render falhou:", e.message); }
     }, 50);
 
-    // Tenta persistir no Supabase em background (se endpoint existir)
+    // v4.37: persiste no Supabase via PUT /api/fichas?id=xxx (endpoint real)
     try {
       if (a._dbId || (typeof a.id === "string" && a.id.length > 10)){
-        fetch("/api/fichas/" + (a._dbId || a.id), {
-          method: "PATCH",
+        var putId = a._dbId || a.id;
+        var body = {
+          decisao_final: decisao,
+          justificativa: justificativa,
+          decisao_user: a.decisao_user,
+          decisao_dt: a.decisao_dt,
+          status: a.status,
+          risco: a.risco,
+        };
+        if (a.score != null && a.score !== '') body.score = parseInt(a.score,10);
+        if (a.limite_aprovado) body.limite_aprovado = a.limite_aprovado;
+        if (a.prazo_aprovado)  body.prazo_aprovado  = a.prazo_aprovado;
+        fetch("/api/fichas?id=" + encodeURIComponent(putId), {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            decisao_final: decisao,
-            justificativa: justificativa,
-            decisao_user: a.decisao_user,
-            decisao_dt: a.decisao_dt,
-            status: a.status,
-          }),
-        }).catch(function(e){ console.warn("[v4.8] PATCH falhou (sem backend ainda):", e.message); });
+          body: JSON.stringify(body),
+        }).then(function(r){
+          if (!r.ok) console.warn("[v4.37] PUT /api/fichas status", r.status);
+          else console.log("[v4.37] Veredito persistido no Supabase (PUT ok)");
+        }).catch(function(e){ console.warn("[v4.37] PUT falhou:", e.message); });
       }
-    } catch(e){}
+    } catch(e){ console.warn("[v4.37] erro no PUT:", e.message); }
   };
 
   // FUNCAO PRINCIPAL: abre ficha completa
