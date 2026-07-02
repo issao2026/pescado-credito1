@@ -46,15 +46,16 @@ a { text-decoration:none; color:inherit; }
 /* ── LAYOUT ─────────────────────────────────── */
 #wrap { display:flex; min-height:100vh; }
 /* v4.39: cor unica RGB(0,48,48) — sem gradient para nao criar diferenca visual */
-#sb { width:220px; min-width:220px; background:#003030; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; border-radius:0 20px 20px 0; box-shadow:4px 0 24px rgba(0,48,48,.24); }
+#sb { width:220px; min-width:220px; background:#012A2A; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; border-radius:0 20px 20px 0; box-shadow:4px 0 24px rgba(0,48,48,.24); }
 #main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
 
 /* ── SIDEBAR ─────────────────────────────────── */
 /* v4.40: layout compacto igual vendedor.html — logo pequeno + texto ao lado */
 .sb-top { padding:14px 14px 14px; border-bottom:1px solid rgba(255,255,255,.05); }
 .sb-brand { display:flex; align-items:center; gap:10px; text-align:left; }
-.sb-mark { width:36px; height:36px; background:#B8DDD9; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
-.sb-mark img { width:100%; height:100%; object-fit:contain; padding:2px; }
+/* v4.40b: fundo transparente para o logo funde com a barra */
+.sb-mark { width:44px; height:44px; background:transparent; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+.sb-mark img { width:100%; height:100%; object-fit:contain; }
 .sb-name { color:#fff; font-family:'Poppins',sans-serif; font-size:15px; font-weight:700; letter-spacing:.1px; line-height:1.2; }
 .sb-sub { color:rgba(255,255,255,.55); font-size:9.5px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
 .sb-nav { flex:1; padding:12px 8px; overflow-y:auto; }
@@ -78,8 +79,8 @@ a { text-decoration:none; color:inherit; }
 .pg-crumb { font-size:12px; color:var(--txt3); display:flex; align-items:center; gap:5px; }
 .tb-right { display:flex; align-items:center; gap:10px; }
 /* v4.40: sino de notificacao com contador de fichas para aprovar */
-.tb-alerts { position:relative; width:38px; height:38px; border-radius:var(--r6); display:flex; align-items:center; justify-content:center; background:var(--surf); border:1px solid var(--bdr); cursor:pointer; color:#003030; transition:all .15s; }
-.tb-alerts:hover { background:#003030; color:#fff; border-color:#003030; }
+.tb-alerts { position:relative; width:38px; height:38px; border-radius:var(--r6); display:flex; align-items:center; justify-content:center; background:var(--surf); border:1px solid var(--bdr); cursor:pointer; color:#012A2A; transition:all .15s; }
+.tb-alerts:hover { background:#012A2A; color:#fff; border-color:#012A2A; }
 .tb-alerts svg { width:20px; height:20px; }
 .tb-badge { position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 6px; background:#DC2626; color:#fff; border-radius:10px; border:2px solid #fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; box-shadow:0 2px 6px rgba(220,38,38,.35); }
 .tb-badge.zero { display:none; }
@@ -1065,7 +1066,7 @@ function pgDash() {
 
  // v4.27: quadro de avisos vira sidebar direita (max 10 cards). Guarda HTML pra injetar depois
  window._quadroAvisosHTML = aguardando.length > 0 ? `
-<div style="background:#003030;border-radius:14px;padding:18px 20px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18);position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column">
+<div style="background:#012A2A;border-radius:14px;padding:18px 20px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18);position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column">
  <div style="margin-bottom:12px">
    <div style="font-size:10.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Quadro de avisos</div>
    <div style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;margin-top:4px;line-height:1.25">Vendedor aguardando análise <span style="background:#DC2626;padding:1px 8px;border-radius:10px;font-size:11px;margin-left:4px">${aguardando.length}</span></div>
@@ -1090,7 +1091,7 @@ function pgDash() {
 <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:24px;align-items:stretch">
 
  <!-- Dark summary card -->
- <div style="background:#003030;border-radius:var(--r8);padding:24px;display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
+ <div style="background:#012A2A;border-radius:var(--r8);padding:24px;display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
  <div>
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
  <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;letter-spacing:.5px">Visão geral da carteira</span>
@@ -1426,7 +1427,7 @@ window.verFichaLagostao = function(idx, cnpj){
   ov.id = 'ficha-lg-modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,51,50,.85);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;padding:20px';
   ov.innerHTML = `<div style="background:#fff;border-radius:14px;padding:0;max-width:640px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">
-    <div style="background:#003030;padding:22px 26px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+    <div style="background:#012A2A;padding:22px 26px;color:#fff;display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Ficha histórica</div>
         <div style="font-family:Poppins,sans-serif;font-size:20px;font-weight:700;margin-top:4px">${r.cliente || '—'}</div>
@@ -5245,7 +5246,7 @@ document.querySelectorAll('.mo').forEach(mo => {
  </div>
  <!-- v4.40: parecer manual do analista -->
  <div style="border-top:1px dashed var(--bdr);padding-top:18px">
-   <div style="font-size:13px;font-weight:700;color:#003030;margin-bottom:6px">OU escreva o parecer manualmente</div>
+   <div style="font-size:13px;font-weight:700;color:#012A2A;margin-bottom:6px">OU escreva o parecer manualmente</div>
    <div style="font-size:11px;color:var(--txt3);margin-bottom:10px">Cole o parecer do ChatGPT, escreva de proprio punho, ou anote a analise de risco. Vira o resumo executivo da ficha.</div>
    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
      <div><label style="font-size:10px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px">Risco classificado</label><select id="par-risco" style="width:100%;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;font-weight:700"><option value="Baixo">Baixo</option><option value="Moderado" selected>Moderado</option><option value="Elevado">Elevado</option><option value="Alto">Alto</option></select></div>
@@ -5255,7 +5256,7 @@ document.querySelectorAll('.mo').forEach(mo => {
    <label style="font-size:10px;color:var(--txt3);text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px">Parecer / resumo executivo</label>
    <textarea id="par-texto" rows="8" placeholder="Cole aqui o parecer do ChatGPT ou escreva a analise. Ex.: Cliente com bom historico, capital social compativel, sem restricoes. Sugerido limite R$ 15.000,00 em 30 dias..." style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;resize:vertical"></textarea>
    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-     <button class="btn btn-p" onclick="salvarParecerManual()" style="background:#003030;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">Salvar parecer manual</button>
+     <button class="btn btn-p" onclick="salvarParecerManual()" style="background:#012A2A;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">Salvar parecer manual</button>
    </div>
  </div>
  </div>
