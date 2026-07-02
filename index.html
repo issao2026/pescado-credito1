@@ -1173,7 +1173,123 @@ function pgDash() {
  </div>
 </div>
 
+${renderPainelLagostao()}
+
 </div>`;
+}
+
+// v4.26: Painel KPIs Lagostao (base historica)
+function renderPainelLagostao(){
+  const L = (window.LAGOSTAO_DATA || []);
+  if (!L.length) return '';
+  const scores = L.map(r=>r.score).filter(s => s>0);
+  const scoreMedio = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const limites = L.map(r=>r.limite).filter(l=>l>0);
+  const totalLimite = limites.reduce((a,b)=>a+b,0);
+  const ticketMedio = limites.length ? totalLimite/limites.length : 0;
+  const totalDividas = L.reduce((a,b)=>a+(b.dividas||0),0);
+  const clientesComDividas = L.filter(r=>r.dividas > 100).length;
+
+  // Distribuicao vendedores
+  const vends = {};
+  L.forEach(r => { vends[r.vendedor] = (vends[r.vendedor]||0)+1; });
+  const topVends = Object.entries(vends).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  // Distribuicao saidas
+  const saidas = { Lagostao:0, Global:0, JP:0 };
+  L.forEach(r => (r.saidas||[]).forEach(s => { if(saidas[s]!==undefined) saidas[s]++; }));
+
+  // Faixas de risco
+  const rBaixo = scores.filter(s=>s>700).length;
+  const rModerado = scores.filter(s=>s>=601 && s<=700).length;
+  const rElevado = scores.filter(s=>s>=501 && s<=600).length;
+  const rAlto = scores.filter(s=>s<501 && s>0).length;
+
+  const R$fmt = v => 'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const kpi = (lbl, val, sub, cor) => `<div style="background:#fff;border:1px solid #E4EAF4;border-left:3px solid ${cor};border-radius:10px;padding:16px 18px">
+    <div style="font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px">${lbl}</div>
+    <div style="font-family:'Poppins',sans-serif;font-size:26px;font-weight:800;color:#0A3332;letter-spacing:-.02em;line-height:1">${val}</div>
+    ${sub ? `<div style="font-size:11px;color:#5F7573;margin-top:6px">${sub}</div>` : ''}
+  </div>`;
+
+  return `
+<div style="margin-top:26px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-size:10.5px;color:#9896A8;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Análise comercial · Lagostão Pescados</div>
+      <div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:#0A3332;letter-spacing:-.02em;margin-top:2px">Base histórica · ${L.length} clientes</div>
+    </div>
+    <div style="font-size:11px;color:#5F7573;font-style:italic">Dados extraídos da planilha operacional</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px">
+    ${kpi('Total analisado', L.length, 'clientes', '#15746E')}
+    ${kpi('Score médio', scoreMedio, scoreMedio>700?'Baixo risco':scoreMedio>=601?'Moderado':scoreMedio>=501?'Elevado':'Alto', scoreMedio>700?'#059669':scoreMedio>=501?'#D97706':'#DC2626')}
+    ${kpi('Ticket médio', R$fmt(ticketMedio), 'limite concedido', '#15746E')}
+    ${kpi('Total limite', R$fmt(totalLimite), 'carteira ativa', '#0A3332')}
+    ${kpi('Dívidas totais', R$fmt(totalDividas), clientesComDividas+' clientes', '#DC2626')}
+    ${kpi('Score < 500', rAlto, 'alto risco', '#DC2626')}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <!-- Vendedores -->
+    <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:18px">
+      <div style="font-size:12px;font-weight:700;color:#0A3332;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em">Top vendedores</div>
+      ${topVends.map(([v,c]) => {
+        const pct = Math.round(c/L.length*100);
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="font-weight:600;color:#0A3332">${v}</span>
+            <span style="color:#5F7573">${c} · ${pct}%</span>
+          </div>
+          <div style="height:6px;background:#EEF2F1;border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:linear-gradient(90deg,#15746E,#0A3332);width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Saida -->
+    <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:18px">
+      <div style="font-size:12px;font-weight:700;color:#0A3332;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em">Rota de saída</div>
+      ${Object.entries(saidas).map(([s,c]) => {
+        const pct = Math.round(c/L.length*100);
+        const cor = s==='Lagostao'?'#15746E':s==='Global'?'#0A3332':'#8B5CF6';
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">
+            <span style="font-weight:600;color:#0A3332">${s}</span>
+            <span style="color:#5F7573">${c} · ${pct}%</span>
+          </div>
+          <div style="height:8px;background:#EEF2F1;border-radius:4px;overflow:hidden">
+            <div style="height:100%;background:${cor};width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Risco -->
+    <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:18px">
+      <div style="font-size:12px;font-weight:700;color:#0A3332;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em">Faixas de risco</div>
+      ${[
+        ['Baixo (> 700)', rBaixo, '#059669'],
+        ['Moderado (601-700)', rModerado, '#D97706'],
+        ['Elevado (501-600)', rElevado, '#EA580C'],
+        ['Alto (< 500)', rAlto, '#DC2626']
+      ].map(([lbl,c,cor]) => {
+        const pct = scores.length ? Math.round(c/scores.length*100) : 0;
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="font-weight:600;color:#0A3332">${lbl}</span>
+            <span style="color:#5F7573">${c} · ${pct}%</span>
+          </div>
+          <div style="height:6px;background:#EEF2F1;border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:${cor};width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+</div>
+`;
 }
 
 function kpiBlock(lbl, val, sub, cls) {
@@ -6060,7 +6176,6 @@ window.gerarEmailRetorno = function(tipo){
         "Atenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     }
 
-    // Modal
     var old = document.getElementById("email-modal");
     if (old) old.remove();
     var ov = document.createElement("div");
