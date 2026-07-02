@@ -49,11 +49,12 @@ a { text-decoration:none; color:inherit; }
 #main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
 
 /* ── SIDEBAR ─────────────────────────────────── */
-.sb-top { padding:20px 16px 18px; border-bottom:1px solid rgba(255,255,255,.05); }
-.sb-brand { display:flex; align-items:center; gap:10px; }
-.sb-mark { width:36px; height:36px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
-.sb-name { color:#fff; font-size:13px; font-weight:700; letter-spacing:.2px; line-height:1.2; }
-.sb-sub { color:rgba(255,255,255,.3); font-size:10px; font-weight:500; letter-spacing:.5px; text-transform:uppercase; }
+.sb-top { padding:14px 12px 14px; border-bottom:1px solid rgba(255,255,255,.05); }
+/* v4.38: logo ocupa a largura da faixa, texto centralizado abaixo */
+.sb-brand { display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
+.sb-mark { width:100%; max-width:160px; height:auto; aspect-ratio:1/1; background:transparent; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sb-name { color:#fff; font-size:14px; font-weight:700; letter-spacing:.2px; line-height:1.2; }
+.sb-sub { color:rgba(255,255,255,.55); font-size:10px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; }
 .sb-nav { flex:1; padding:12px 8px; overflow-y:auto; }
 .nav-grp { margin-bottom:20px; }
 .nav-grp-lbl { color:rgba(255,255,255,.22); font-size:9.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; padding:0 8px 8px; }
@@ -658,7 +659,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
 <div id="sb">
  <div class="sb-top">
  <div class="sb-brand">
- <img src="/logo-lagostao.png" alt="Lagostao" class="sb-mark" style="background:transparent;object-fit:contain;padding:2px">
+ <img src="/logo-lagostao.png" alt="Lagostao" class="sb-mark" style="background:transparent;object-fit:contain;width:100%;max-width:160px;height:auto">
  <div>
  <div class="sb-name">Crédito</div>
  <div class="sb-sub">Lagostao Pescados</div>
