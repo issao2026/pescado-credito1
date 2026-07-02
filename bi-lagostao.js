@@ -243,7 +243,8 @@
 
 <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:12px;margin-bottom:14px">${cardChart('Rota de saída', 'ch-saidas', 220)}${cardChart('Distribuição de risco', 'ch-risco', 220)}${cardChart('Top vendedores por volume', 'ch-vendedores', 220)}</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">${cardChart('Score médio por vendedor', 'ch-score-vend', 240)}${cardChart('Ticket médio por vendedor (R$)', 'ch-ticket-vend', 240)}</div>
-<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-bottom:14px">${cardChart('Score x Limite (cada ponto é um cliente)', 'ch-scatter', 280)}${cardChart('Risco por rota de saída', 'ch-risco-saida', 280)}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">${cardChart('Score x Limite (radar — passe o mouse)', 'ch-scatter', 280)}${cardChart('Score x Dividas (radar — identifica risco oculto)', 'ch-scatter-div', 280)}</div>
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px">${cardChart('Risco por rota de saída', 'ch-risco-saida', 240)}</div>
 <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px">${cardChart('Distribuição por tempo de atividade (anos)', 'ch-fundacao', 200)}</div>
 
 <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:0;overflow:hidden"><div style="padding:14px 18px;border-bottom:1px solid #E4EAF4;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;font-weight:700;color:#0A3332;text-transform:uppercase;letter-spacing:.05em">Clientes filtrados (${filt.length}) — clique pra ver ficha</div><div style="font-size:11px;color:#5F7573">Ordenacao: score decrescente</div></div><div style="max-height:520px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead style="background:#F5F7F6;position:sticky;top:0"><tr style="text-align:left"><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Cliente</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">CNPJ</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Vendedor</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Fundado</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Score</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Dívidas</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Prazo</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Limite</th><th style="padding:10px 14px;font-weight:700;color:#5F7573;font-size:11px;text-transform:uppercase">Saída</th></tr></thead><tbody>${filt.slice().sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,300).map((r,i)=>{const cor = r.score>700?'#059669':r.score>=601?'#D97706':r.score>=501?'#EA580C':r.score>0?'#DC2626':'#9CA3AF';return `<tr onclick="verFichaLagostao(${i},'${(r.cnpj||'').replace(/'/g,"\\'")}')" style="border-bottom:1px solid #EEF2F1;cursor:pointer" onmouseover="this.style.background='#F5F7F6'" onmouseout="this.style.background=''"><td style="padding:9px 14px;font-weight:600;color:#0A3332">${r.cliente || '—'}</td><td style="padding:9px 14px;color:#5F7573;font-family:monospace;font-size:11.5px">${r.cnpj || '—'}</td><td style="padding:9px 14px;color:#0A3332">${r.vendedor || '—'}</td><td style="padding:9px 14px;color:#5F7573">${r.fundado || '—'}</td><td style="padding:9px 14px"><span style="background:${cor}22;color:${cor};padding:2px 8px;border-radius:10px;font-weight:700;font-size:11.5px">${r.score || '—'}</span></td><td style="padding:9px 14px;color:${r.dividas>100?'#DC2626':'#5F7573'};font-weight:${r.dividas>100?'700':'500'}">${R$dr(r.dividas)}</td><td style="padding:9px 14px;color:#0A3332">${r.prazo || '—'}</td><td style="padding:9px 14px;font-weight:600;color:#0A3332">${R$dr(r.limite)}</td><td style="padding:9px 14px;color:#5F7573;font-size:11.5px">${(r.saidas||[]).join(' + ') || '—'}</td></tr>`;}).join('')}</tbody></table>${filt.length > 300 ? `<div style="padding:12px;text-align:center;color:#5F7573;font-size:12px">Mostrando primeiros 300 de ${filt.length}.</div>` : ''}</div></div>`;
@@ -252,7 +253,7 @@
   window.renderBIGraficos = function(){
     const L = (window.LAGOSTAO_DATA || []); if (!L.length || !window.Chart) return;
     const filt = aplicarFiltros(L);
-    ['ch-saidas','ch-risco','ch-vendedores','ch-score-vend','ch-ticket-vend','ch-scatter','ch-risco-saida','ch-fundacao'].forEach(id => { const inst = Chart.getChart(id); if (inst) inst.destroy(); });
+    ['ch-saidas','ch-risco','ch-vendedores','ch-score-vend','ch-ticket-vend','ch-scatter','ch-scatter-div','ch-risco-saida','ch-fundacao'].forEach(id => { const inst = Chart.getChart(id); if (inst) inst.destroy(); });
 
     const sd = {Lagostao:0, Global:0, JP:0};
     filt.forEach(r => (r.saidas||[]).forEach(s => { if(sd[s]!==undefined) sd[s]++; }));
@@ -279,9 +280,15 @@
     const e5 = document.getElementById('ch-ticket-vend');
     if (e5) new Chart(e5, { type:'bar', data:{ labels:tmv.map(o=>o.v), datasets:[{ label:'Ticket', data:tmv.map(o=>o.med), backgroundColor:CORES.verdeDark, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ verClientesDoVendedor(tmv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
-    const pts = filt.filter(r=>r.score>0 && r.limite>0).map(r => ({ x:r.score, y:r.limite, cliente:r.cliente, backgroundColor:r.score>700?CORES.verdeOk:r.score>=601?CORES.amarelo:r.score>=501?CORES.laranja:CORES.vermelho }));
+    // v4.41: scatter Score x Limite — bolinhas maiores, com borda branca, semi-transparentes
+    const pts = filt.filter(r=>r.score>0 && r.limite>0).map(r => ({ x:r.score, y:r.limite, cliente:r.cliente, cor:r.score>700?CORES.verdeOk:r.score>=601?CORES.amarelo:r.score>=501?CORES.laranja:CORES.vermelho }));
     const e6 = document.getElementById('ch-scatter');
-    if (e6) new Chart(e6, { type:'scatter', data:{ datasets:[{ label:'Cliente', data:pts, backgroundColor: pts.map(p=>p.backgroundColor), borderColor: pts.map(p=>p.backgroundColor), pointRadius:5, pointHoverRadius:8 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var r=filt.filter(x=>x.score>0 && x.limite>0)[el[0].index]; if(r) verFichaLagostao(0, r.cnpj); }}, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>pts[c.dataIndex].cliente+' | Score '+c.parsed.x+' | R$ '+c.parsed.y.toLocaleString('pt-BR')}}}, scales:{ x:{ title:{display:true,text:'Score',font:{size:10}}, min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ title:{display:true,text:'Limite (R$)',font:{size:10}}, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}}}});
+    if (e6) new Chart(e6, { type:'scatter', data:{ datasets:[{ label:'Cliente', data:pts, backgroundColor: pts.map(p=>p.cor+'CC'), borderColor:'#fff', borderWidth:1, pointRadius:3.5, pointHoverRadius:14, pointHoverBorderWidth:3 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var r=filt.filter(x=>x.score>0 && x.limite>0)[el[0].index]; if(r) verFichaLagostao(0, r.cnpj); }}, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>pts[c.dataIndex].cliente+' | Score '+c.parsed.x+' | R$ '+c.parsed.y.toLocaleString('pt-BR')}}}, scales:{ x:{ title:{display:true,text:'Score',font:{size:11,weight:'bold'}}, min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ title:{display:true,text:'Limite (R$)',font:{size:11,weight:'bold'}}, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}}}});
+
+    // v4.41: NOVO scatter Score x Dividas — identifica risco (bom score com divida ativa)
+    const ptsD = filt.filter(r=>r.score>0).map(r => ({ x:r.score, y:r.dividas||0, cliente:r.cliente, cor:(r.dividas||0)>1000?CORES.vermelho:(r.dividas||0)>100?CORES.laranja:CORES.verdeOk }));
+    const e9 = document.getElementById('ch-scatter-div');
+    if (e9) new Chart(e9, { type:'scatter', data:{ datasets:[{ label:'Cliente', data:ptsD, backgroundColor: ptsD.map(p=>p.cor+'CC'), borderColor:'#fff', borderWidth:1, pointRadius:3.5, pointHoverRadius:14, pointHoverBorderWidth:3 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var r=filt.filter(x=>x.score>0)[el[0].index]; if(r) verFichaLagostao(0, r.cnpj); }}, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>ptsD[c.dataIndex].cliente+' | Score '+c.parsed.x+' | Divida R$ '+c.parsed.y.toLocaleString('pt-BR')}}}, scales:{ x:{ title:{display:true,text:'Score',font:{size:11,weight:'bold'}}, min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ title:{display:true,text:'Dividas (R$)',font:{size:11,weight:'bold'}}, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>v>=1000?'R$ '+(v/1000).toFixed(0)+'k':'R$ '+v}}}}});
 
     const sL = ['Lagostao','Global','JP']; const rL = ['Baixo','Moderado','Elevado','Alto','Sem'];
     const dR = rL.map((lbl, li) => {
@@ -290,7 +297,8 @@
       return { label:lbl, data:dA, backgroundColor:co[li] };
     });
     const e7 = document.getElementById('ch-risco-saida');
-    if (e7) new Chart(e7, { type:'bar', data:{ labels:sL, datasets:dR }, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorSaida(sL[el[0].index]); }}, plugins:{ legend:{position:'bottom', labels:{font:{size:10}, padding:6, boxWidth:10}}}, scales:{ x:{ stacked:true, grid:{display:false}}, y:{ stacked:true, grid:{color:'rgba(0,0,0,.04)'}}}}});
+    // v4.41: click abre lista da combinacao rota+risco
+    if (e7) new Chart(e7, { type:'bar', data:{ labels:sL, datasets:dR }, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var idxRota=el[0].index; var idxRisco=el[0].datasetIndex; verClientesPorRotaRisco(sL[idxRota], rL[idxRisco]); }}, plugins:{ legend:{position:'bottom', labels:{font:{size:10}, padding:6, boxWidth:10}}}, scales:{ x:{ stacked:true, grid:{display:false}}, y:{ stacked:true, grid:{color:'rgba(0,0,0,.04)'}}}}});
 
     const aA = new Date().getFullYear();
     const bA = {'< 5':0, '5-10':0, '10-20':0, '20-30':0, '> 30':0, 'Sem data':0};
@@ -304,7 +312,60 @@
       if (id < 5) bA['< 5']++; else if (id <= 10) bA['5-10']++; else if (id <= 20) bA['10-20']++; else if (id <= 30) bA['20-30']++; else bA['> 30']++;
     });
     const e8 = document.getElementById('ch-fundacao');
-    if (e8) new Chart(e8, { type:'bar', data:{ labels:Object.keys(bA), datasets:[{ label:'Clientes', data:Object.values(bA), backgroundColor:[CORES.vermelho, CORES.laranja, CORES.amarelo, CORES.verdeOk, CORES.verdeDark, CORES.cinza], borderRadius:6 }]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{display:false}, ticks:{font:{size:11}}}, y:{ grid:{color:'rgba(0,0,0,.04)'}}}}});
+    // v4.41: click na barra abre lista dos clientes daquela faixa
+    if (e8) new Chart(e8, { type:'bar', data:{ labels:Object.keys(bA), datasets:[{ label:'Clientes', data:Object.values(bA), backgroundColor:[CORES.vermelho, CORES.laranja, CORES.amarelo, CORES.verdeOk, CORES.verdeDark, CORES.cinza], borderRadius:6 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ verClientesPorFaixaAno(Object.keys(bA)[el[0].index]); }}, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{display:false}, ticks:{font:{size:11}}}, y:{ grid:{color:'rgba(0,0,0,.04)'}}}}});
+  };
+
+  // v4.41: modal com clientes por combinacao rota + faixa de risco
+  window.verClientesPorRotaRisco = function(rota, risco){
+    var L = (window.LAGOSTAO_DATA || []);
+    function risFaixa(s){
+      if (!s || s===0) return 'Sem';
+      if (s>700) return 'Baixo';
+      if (s>=601) return 'Moderado';
+      if (s>=501) return 'Elevado';
+      return 'Alto';
+    }
+    var clientes = aplicarFiltros(L)
+      .filter(function(r){ return (r.saidas||[]).includes(rota) && risFaixa(r.score) === risco; })
+      .sort(function(a,b){ return (b.limite||0)-(a.limite||0); });
+    var corRisco = risco==='Baixo'?'#059669':risco==='Moderado'?'#D97706':risco==='Elevado'?'#EA580C':risco==='Alto'?'#DC2626':'#9CA3AF';
+    var h = '<div style="background:' + corRisco + '18;border:1px solid ' + corRisco + '55;padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;color:#012A2A">Rota: <b>' + rota + '</b> · Risco: <b style="color:' + corRisco + '">' + risco + '</b> · <b>' + clientes.length + '</b> cliente' + (clientes.length===1?'':'s') + '. Clique numa linha para abrir a ficha.</div>';
+    h += '<div style="max-height:420px;overflow-y:auto;border:1px solid #EEF2F1;border-radius:8px"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead style="background:#F5F7F6;position:sticky;top:0"><tr><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">Cliente</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">CNPJ</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">Vendedor</th><th style="padding:10px 14px;text-align:right;font-size:11px;color:#5F7573;text-transform:uppercase">Score</th><th style="padding:10px 14px;text-align:right;font-size:11px;color:#5F7573;text-transform:uppercase">Limite</th></tr></thead><tbody>';
+    clientes.forEach(function(r){
+      h += '<tr onclick="verFichaLagostao(0,\'' + (r.cnpj||'') + '\')" style="border-bottom:1px solid #EEF2F1;cursor:pointer;transition:.12s" onmouseover="this.style.background=\'#F5F7F6\'" onmouseout="this.style.background=\'\'"><td style="padding:9px 14px;font-weight:600;color:#012A2A">' + (r.cliente || '—') + '</td><td style="padding:9px 14px;color:#5F7573;font-family:monospace;font-size:11.5px">' + (r.cnpj || '—') + '</td><td style="padding:9px 14px;color:#5F7573">' + (r.vendedor || '—') + '</td><td style="padding:9px 14px;text-align:right"><span style="background:' + corRisco + '22;color:' + corRisco + ';padding:2px 8px;border-radius:10px;font-weight:700">' + (r.score || '—') + '</span></td><td style="padding:9px 14px;text-align:right;font-weight:700;color:#012A2A">' + R$dr(r.limite) + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    window.abrirModalDrill(rota + ' · ' + risco, clientes.length + ' cliente' + (clientes.length===1?'':'s'), h);
+  };
+
+  // v4.41: modal com clientes de uma faixa de tempo de atividade
+  window.verClientesPorFaixaAno = function(faixa){
+    var L = (window.LAGOSTAO_DATA || []);
+    var aAtual = new Date().getFullYear();
+    function faixaCliente(r){
+      if (!r.fundado) return 'Sem data';
+      var p = String(r.fundado).split('/'); var ano = null;
+      if (p.length===3) ano = parseInt(p[2]);
+      else if (String(r.fundado).includes('-')) ano = parseInt(String(r.fundado).split('-')[0]);
+      if (!ano) return 'Sem data';
+      var id = aAtual - ano;
+      if (id < 5) return '< 5';
+      if (id <= 10) return '5-10';
+      if (id <= 20) return '10-20';
+      if (id <= 30) return '20-30';
+      return '> 30';
+    }
+    var clientes = aplicarFiltros(L).filter(function(r){ return faixaCliente(r) === faixa; })
+                                    .sort(function(a,b){ return (b.limite||0)-(a.limite||0); });
+    var h = '<div style="background:#F5F7F6;padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;color:#5F7573">' + clientes.length + ' cliente' + (clientes.length===1?'':'s') + ' com tempo de atividade <b style="color:#012A2A">' + faixa + (faixa === 'Sem data' ? '' : ' anos') + '</b>. Clique numa linha para abrir a ficha historica.</div>';
+    h += '<div style="max-height:420px;overflow-y:auto;border:1px solid #EEF2F1;border-radius:8px"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead style="background:#F5F7F6;position:sticky;top:0"><tr><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">Cliente</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">CNPJ</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">Vendedor</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#5F7573;text-transform:uppercase">Fundado</th><th style="padding:10px 14px;text-align:right;font-size:11px;color:#5F7573;text-transform:uppercase">Score</th><th style="padding:10px 14px;text-align:right;font-size:11px;color:#5F7573;text-transform:uppercase">Limite</th></tr></thead><tbody>';
+    clientes.forEach(function(r){
+      var corS = r.score>700?'#059669':r.score>=601?'#D97706':r.score>=501?'#EA580C':r.score>0?'#DC2626':'#9CA3AF';
+      h += '<tr onclick="verFichaLagostao(0,\'' + (r.cnpj||'') + '\')" style="border-bottom:1px solid #EEF2F1;cursor:pointer;transition:.12s" onmouseover="this.style.background=\'#F5F7F6\'" onmouseout="this.style.background=\'\'"><td style="padding:9px 14px;font-weight:600;color:#012A2A">' + (r.cliente || '—') + '</td><td style="padding:9px 14px;color:#5F7573;font-family:monospace;font-size:11.5px">' + (r.cnpj || '—') + '</td><td style="padding:9px 14px;color:#5F7573">' + (r.vendedor || '—') + '</td><td style="padding:9px 14px;color:#5F7573">' + (r.fundado || '—') + '</td><td style="padding:9px 14px;text-align:right"><span style="background:' + corS + '22;color:' + corS + ';padding:2px 8px;border-radius:10px;font-weight:700">' + (r.score || '—') + '</span></td><td style="padding:9px 14px;text-align:right;font-weight:700;color:#012A2A">' + R$dr(r.limite) + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    window.abrirModalDrill('Tempo de atividade: ' + faixa + (faixa === 'Sem data' ? '' : ' anos'), clientes.length + ' cliente' + (clientes.length===1?'':'s'), h);
   };
 
   window.verFichaLagostao = function(idx, cnpj){
