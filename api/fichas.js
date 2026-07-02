@@ -215,6 +215,13 @@ function toFrontend(row) {
     recIA:     row.rec_ia    ?? d.recIA     ?? null,
     resp:      row.operador  ?? d.resp      ?? "—",
     final:     row.decisao_final ?? d.final ?? "—",
+    decisao_final: row.decisao_final ?? d.decisao_final ?? null,
+    justificativa: row.justificativa ?? d.justificativa ?? null,
+    // v4.37: expor campos do veredito editavel
+    limite_aprovado: d.limite_aprovado ?? null,
+    prazo_aprovado:  d.prazo_aprovado  ?? null,
+    decisao_user:    d.decisao_user    ?? null,
+    decisao_dt:      d.decisao_dt      ?? null,
     dt:        row.dt        ?? d.dt        ?? row.created_at?.slice(0, 10) ?? "—",
 
     docs:      d.docs        ?? [],
