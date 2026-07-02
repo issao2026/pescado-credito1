@@ -1038,26 +1038,29 @@ function pgDash() {
  // v4.24: quadro de avisos - fichas do vendedor aguardando analise
  const aguardando = A.filter(x=>x.status==='Aguardando análise' || (x.dados && x.dados.origem==='vendedor' && (!x.final || x.final==='—')));
 
- return `${aguardando.length > 0 ? `
-<div style="background:linear-gradient(135deg,#0A3332 0%,#15746E 100%);border-radius:14px;padding:20px 26px;margin-bottom:22px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18)">
- <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-   <div>
-     <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Quadro de avisos</div>
-     <div style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;margin-top:4px">Fichas do vendedor aguardando análise <span style="background:#DC2626;padding:2px 10px;border-radius:12px;font-size:12px;margin-left:6px;vertical-align:middle">${aguardando.length}</span></div>
-   </div>
-   <button onclick="setF('aguardando_analise');nav('fila')" style="background:#fff;color:#0A3332;border:none;border-radius:8px;padding:9px 16px;font-weight:600;font-size:13px;cursor:pointer">Ver todas →</button>
+ // v4.27: quadro de avisos vira sidebar direita (max 10 cards). Guarda HTML pra injetar depois
+ window._quadroAvisosHTML = aguardando.length > 0 ? `
+<div style="background:linear-gradient(180deg,#0A3332 0%,#15746E 100%);border-radius:14px;padding:18px 20px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18);position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column">
+ <div style="margin-bottom:12px">
+   <div style="font-size:10.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Quadro de avisos</div>
+   <div style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;margin-top:4px;line-height:1.25">Vendedor aguardando análise <span style="background:#DC2626;padding:1px 8px;border-radius:10px;font-size:11px;margin-left:4px">${aguardando.length}</span></div>
  </div>
- <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
- ${aguardando.slice(0,4).map(a => `
-   <div onclick="openAnalise('${a.id}')" style="background:rgba(255,255,255,.1);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:12px 14px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
-     <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nome || '—'}</div>
-     <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px">CNPJ ${a.cnpj || '—'} · ${a.vendedor || '—'}</div>
-     <div style="font-size:11.5px;color:#B8DDD9;margin-top:6px;font-weight:600">R$ ${(a.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})} · ${a.prazo || '—'}</div>
+ <div style="flex:1;overflow-y:auto;margin:0 -6px;padding:0 6px">
+ ${aguardando.map(a => `
+   <div onclick="openAnalise('${a.id}')" style="background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:10px 12px;cursor:pointer;transition:.15s;margin-bottom:8px" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.11)'">
+     <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nome || '—'}</div>
+     <div style="font-size:10.5px;color:rgba(255,255,255,.7);margin-top:3px;line-height:1.35">${a.cnpj || '—'}<br>${a.vendedor || '—'}</div>
+     <div style="font-size:11.5px;color:#B8DDD9;margin-top:5px;font-weight:600">R$ ${(a.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})} · ${a.prazo || '—'}</div>
    </div>
  `).join('')}
  </div>
-</div>` : ''}
-`+`
+ <button onclick="setF('aguardando_analise');nav('fila')" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:9px 12px;font-weight:600;font-size:12px;cursor:pointer;margin-top:12px;width:100%">Ver fila completa →</button>
+</div>` : '';
+
+ // v4.27: layout com sidebar direita quando ha avisos
+ var _wrapStart = window._quadroAvisosHTML ? '<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:flex-start"><div>' : '';
+ var _wrapEnd = window._quadroAvisosHTML ? '</div><aside style="position:sticky;top:16px">' + window._quadroAvisosHTML + '</aside></div>' : '';
+ return _wrapStart + `
 <!-- HERO ROW: dark summary card + KPI cards -->
 <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:24px;align-items:stretch">
 
@@ -1175,7 +1178,7 @@ function pgDash() {
 
 ${renderPainelLagostao()}
 
-</div>`;
+</div>` + _wrapEnd;
 }
 
 // v4.26: Painel KPIs Lagostao (base historica)
@@ -6142,11 +6145,22 @@ window.imprimirFichaAtual = function(){
 window.gerarEmailRetorno = function(tipo){
   try {
     var a = (typeof state !== "undefined" && state && state.openA) ? state.openA : null;
+    // Fallback: se nao tiver state.openA, procura pela ficha carregada no D
+    if (!a && window.D && window.D.analyses){
+      var _pOpen = document.querySelector("[data-open-ficha]");
+      var _openId = _pOpen ? _pOpen.getAttribute("data-open-ficha") : null;
+      if (_openId) a = window.D.analyses.find(x => String(x.id) === String(_openId));
+      if (!a) a = window.D.analyses[0]; // ultima ficha aberta
+    }
     var cnpj = (a && (a.cnpj || a.cpf_cnpj)) || document.getElementById("fc")?.value || "";
     var nome = (a && (a.nome || a.razao_social)) || document.getElementById("fn")?.value || "";
     var score = (a && a.score) || document.getElementById("rep-score")?.value || "";
     var limite = document.getElementById("rep-limite")?.value || (a && a.valor) || "";
     var prazo = document.getElementById("rep-prazo")?.value || (a && a.prazo) || "14 dias";
+    // v4.27: destinatario = email do vendedor (da ficha original)
+    var emailVendedor = (a && a.dados && (a.dados.email_vendedor || a.dados.email_cliente)) || "";
+    var nomeVendedor = (a && (a.vendedor || (a.dados && a.dados.vendedor))) || "";
+    var fichaId = a && (a._dbId || a.id) || null;
 
     var perfil = "satisfatório";
     var s = parseInt(String(score).replace(/\D/g,"")) || 0;
@@ -6180,27 +6194,60 @@ window.gerarEmailRetorno = function(tipo){
     if (old) old.remove();
     var ov = document.createElement("div");
     ov.id = "email-modal";
+    ov.setAttribute("data-ficha-id", fichaId || "");
+    ov.setAttribute("data-tipo", tipo);
     ov.style.cssText = "position:fixed;inset:0;background:rgba(10,51,50,.85);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;padding:20px";
     ov.innerHTML =
-      '<div style="background:#fff;border-radius:14px;padding:26px 28px;max-width:640px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="background:#fff;border-radius:14px;padding:26px 28px;max-width:680px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
           '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:17px;color:#0A3332">Email de retorno — ' + (tipo === "aprovado" ? "Aprovado" : "Somente à vista") + '</div>' +
           '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666">×</button>' +
         '</div>' +
+        '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Para (vendedor)</label>' +
+        '<input id="em-para" value="' + emailVendedor.replace(/"/g,"&quot;") + '" placeholder="email do vendedor" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:10px;font-family:Inter,sans-serif;box-sizing:border-box;background:' + (emailVendedor ? '#F0F7F6' : '#FEF3C7') + '">' +
+        (nomeVendedor ? '<div style="font-size:11px;color:#5F7573;margin-top:-6px;margin-bottom:10px">Vendedor: ' + nomeVendedor + '</div>' : '') +
         '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Assunto</label>' +
         '<input id="em-assunto" value="' + assunto.replace(/"/g,"&quot;") + '" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:Inter,sans-serif;box-sizing:border-box">' +
         '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Corpo</label>' +
-        '<textarea id="em-corpo" style="width:100%;min-height:320px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>' +
-        '<div style="display:flex;gap:8px;margin-top:14px">' +
-          '<button onclick="(function(){var t=document.getElementById(\'em-corpo\').value;navigator.clipboard.writeText(t);var b=event.target;b.textContent=\'Copiado\';setTimeout(function(){b.textContent=\'Copiar texto\'},1500)})()" style="flex:1;background:#15746E;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">Copiar texto</button>' +
-          '<button onclick="(function(){var a=document.getElementById(\'em-assunto\').value;var c=document.getElementById(\'em-corpo\').value;window.location.href=\'mailto:?subject=\'+encodeURIComponent(a)+\'&body=\'+encodeURIComponent(c)})()" style="flex:1;background:#0A3332;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">Abrir no email</button>' +
-          '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>' +
+        '<textarea id="em-corpo" style="width:100%;min-height:280px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>' +
+        '<div id="em-status" style="margin-top:10px;font-size:12px;color:#5F7573;min-height:18px"></div>' +
+        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
+          '<button onclick="salvarEnviarEmail()" style="flex:1;min-width:180px;background:#15746E;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer">Salvar + Enviar (mailto)</button>' +
+          '<button onclick="salvarEmailSemEnviar()" style="background:#0A3332;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer">Só salvar</button>' +
+          '<button onclick="(function(){var t=document.getElementById(\'em-corpo\').value;navigator.clipboard.writeText(t);var b=event.target;b.textContent=\'Copiado\';setTimeout(function(){b.textContent=\'Copiar\'},1500)})()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer">Copiar</button>' +
+          '<button onclick="document.getElementById(\'email-modal\').remove()" style="background:#f3f4f6;color:#0A3332;border:1px solid #D6D2CB;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
   } catch(e){
     alert("Erro ao gerar email: " + e.message);
   }
+};
+
+window.salvarEnviarEmail = async function(){ await window._persistirEmail(true); };
+window.salvarEmailSemEnviar = async function(){ await window._persistirEmail(false); };
+window._persistirEmail = async function(enviarMailto){
+  var st = document.getElementById("em-status");
+  var mod = document.getElementById("email-modal");
+  var fichaId = mod?.getAttribute("data-ficha-id") || "";
+  var tipo = mod?.getAttribute("data-tipo") || "aprovado";
+  var para = document.getElementById("em-para")?.value.trim() || "";
+  var assunto = document.getElementById("em-assunto")?.value || "";
+  var corpo = document.getElementById("em-corpo")?.value || "";
+  if (!para) { st.style.color="#DC2626"; st.textContent="Preencha o email do vendedor no campo 'Para'"; return; }
+  if (!fichaId){ st.style.color="#DC2626"; st.textContent="Ficha nao identificada."; return; }
+  st.style.color="#5F7573"; st.textContent="Salvando no banco...";
+  try {
+    var payload = { dados: { email_retorno: { tipo:tipo, para:para, assunto:assunto, corpo:corpo, gerado_em:new Date().toISOString(), operador:"Francisco Elves C." } } };
+    var r = await fetch("/api/fichas?id="+encodeURIComponent(fichaId), { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    if (!r.ok){ var j = await r.json().catch(()=>({})); st.style.color="#DC2626"; st.textContent="Erro ao salvar: "+(j.error||r.status); return; }
+    st.style.color="#059669"; st.textContent="Email arquivado na ficha " + fichaId.substring(0,8);
+    if (enviarMailto){ setTimeout(function(){ window.location.href = "mailto:"+encodeURIComponent(para)+"?subject="+encodeURIComponent(assunto)+"&body="+encodeURIComponent(corpo); }, 400); }
+    if (window.D && window.D.analyses){
+      var idx = window.D.analyses.findIndex(x => String(x._dbId||x.id)===String(fichaId));
+      if (idx>=0) window.D.analyses[idx].dados = Object.assign({}, window.D.analyses[idx].dados||{}, payload.dados);
+    }
+  } catch(e){ st.style.color="#DC2626"; st.textContent="Erro de conexao: "+e.message; }
 };
 
 </script>
