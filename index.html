@@ -9,12 +9,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
- --ink: #060E1F;
- --ink2: #111B30;
- --ink3: #1C2A45;
- --accent: #4F46E5;
- --a2: #6366F1;
- --a3: #C7D2FE;
+ --ink: #0A3332;
+ --ink2: #0F4644;
+ --ink3: #15746E;
+ --accent: #15746E;
+ --accent-dark: #0A3332;
+ --a2: #1E8A82;
+ --a3: #B8DDD9;
  --surf: #F4F7FB;
  --card: #FFFFFF;
  --bdr: #E4EAF4;
@@ -48,7 +49,7 @@ a { text-decoration:none; color:inherit; }
 /* ── SIDEBAR ─────────────────────────────────── */
 .sb-top { padding:20px 16px 18px; border-bottom:1px solid rgba(255,255,255,.05); }
 .sb-brand { display:flex; align-items:center; gap:10px; }
-.sb-mark { width:30px; height:30px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.sb-mark { width:36px; height:36px; background:var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
 .sb-name { color:#fff; font-size:13px; font-weight:700; letter-spacing:.2px; line-height:1.2; }
 .sb-sub { color:rgba(255,255,255,.3); font-size:10px; font-weight:500; letter-spacing:.5px; text-transform:uppercase; }
 .sb-nav { flex:1; padding:12px 8px; overflow-y:auto; }
@@ -56,7 +57,7 @@ a { text-decoration:none; color:inherit; }
 .nav-grp-lbl { color:rgba(255,255,255,.22); font-size:9.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; padding:0 8px 8px; }
 .ni { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:var(--r6); color:rgba(255,255,255,.45); font-size:12.5px; font-weight:500; cursor:pointer; transition:all .12s; position:relative; border-left:2px solid transparent; margin-bottom:2px; }
 .ni:hover { color:rgba(255,255,255,.9); background:rgba(255,255,255,.05); }
-.ni.on { color:#fff; background:rgba(79,70,229,.18); border-left-color:var(--accent); }
+.ni.on { color:#fff; background:rgba(21,116,110,.18); border-left-color:var(--accent); }
 .ni .ic { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
 .ni .ct { margin-left:auto; background:var(--R); color:#fff; border-radius:10px; padding:1px 6px; font-size:9px; font-weight:800; }
 .sb-ft { padding:14px 12px; border-top:1px solid rgba(255,255,255,.05); }
@@ -150,7 +151,7 @@ th { background:var(--surf); color:var(--txt3); font-size:10.5px; font-weight:70
 td { padding:11px 14px; border-bottom:1px solid var(--bdr); font-size:12.5px; color:var(--txt); vertical-align:middle; }
 tr:last-child td { border-bottom:none; }
 tbody tr { border-left:3px solid transparent; transition:background .1s; cursor:pointer; }
-tbody tr:hover { background:rgba(79,70,229,.05); }
+tbody tr:hover { background:rgba(21,116,110,.05); }
 tbody tr:hover td { color:var(--txt); }
 tbody tr.rG-row { border-left-color:var(--G); }
 tbody tr.rY-row { border-left-color:var(--Y); }
@@ -167,11 +168,11 @@ tbody tr.rP-row { border-left-color:var(--P); }
 .fchip:hover { border-color:var(--accent); color:var(--accent); }
 .fchip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
 .fsearch { margin-left:auto; padding:6px 14px; border:1px solid var(--bdr); border-radius:50px; font-size:12px; color:var(--txt); width:220px; outline:none; background:rgba(255,255,255,.8); }
-.fsearch:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.fsearch:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(21,116,110,.1); }
 
 /* ── UPLOAD ──────────────────────────────────── */
 .drop-zone { border:2px dashed var(--bdr); border-radius:var(--r8); padding:40px 24px; text-align:center; cursor:pointer; transition:all .15s; background:rgba(255,255,255,.5); }
-.drop-zone:hover, .drop-zone.dg { border-color:var(--accent); background:rgba(79,70,229,.04); }
+.drop-zone:hover, .drop-zone.dg { border-color:var(--accent); background:rgba(21,116,110,.04); }
 .drop-ic { font-size:36px; margin-bottom:10px; }
 .drop-title { font-size:14px; font-weight:700; color:var(--txt); margin-bottom:4px; }
 .drop-sub { font-size:12px; color:var(--txt2); }
@@ -260,7 +261,7 @@ tbody tr.rP-row { border-left-color:var(--P); }
 .fg { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
 .fg label { font-size:11px; font-weight:600; color:var(--txt2); letter-spacing:.3px; }
 .fg input, .fg select, .fg textarea { border:1px solid var(--bdr); border-radius:var(--r6); padding:8px 13px; font-size:12.5px; color:var(--txt); background:rgba(255,255,255,.85); outline:none; transition:border .12s; }
-.fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(79,70,229,.12); }
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(21,116,110,.12); }
 .fg textarea { resize:vertical; min-height:72px; }
 .fgrid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .fgrid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
@@ -338,7 +339,7 @@ tr:hover .row-acts { opacity:1; }
 .alert { padding:10px 14px; border-radius:var(--r6); font-size:12px; display:flex; align-items:flex-start; gap:9px; margin-bottom:10px; border-left:3px solid; }
 .al-w { background:var(--YB); border-color:var(--Y); color:var(--YT); }
 .al-r { background:var(--RB); border-color:var(--R); color:var(--RT); }
-.al-i { background:rgba(79,70,229,.07); border-color:var(--accent); color:var(--accent); }
+.al-i { background:rgba(21,116,110,.07); border-color:var(--accent); color:var(--accent); }
 .al-g { background:var(--GB); border-color:var(--G); color:var(--GT); }
 
 /* ── INFO ROWS ───────────────────────────────── */
@@ -655,10 +656,10 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
 <div id="sb">
  <div class="sb-top">
  <div class="sb-brand">
- <div class="sb-mark"></div>
+ <img src="/logo-lagostao.png" alt="Lagostao" class="sb-mark" style="background:transparent;object-fit:contain;padding:2px">
  <div>
  <div class="sb-name">Crédito</div>
- <div class="sb-sub">Pescado · Análise</div>
+ <div class="sb-sub">Lagostao Pescados</div>
  </div>
  </div>
  </div>
@@ -787,7 +788,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <div class="mo-title" id="mo-title">—</div>
  <div class="mo-sub" id="mo-sub">—</div>
  </div>
- <button class="btn btn-s btn-sm" style="background:#191824;color:#fff;border-color:#191824" onclick="pescadoAssistenteAbrir()">Assistente IA</button>
+ <button class="btn btn-s btn-sm" style="background:#0A3332;color:#fff;border-color:#0A3332" onclick="pescadoAssistenteAbrir()">Assistente IA</button>
  <button class="btn btn-ghost btn-sm" onclick="closeMo('mo-analise')"> Fechar</button>
  </div>
  <div class="mo-body" id="mo-body"></div>
@@ -2278,7 +2279,7 @@ function setAprov(tipo) {
  });
  const selMap={aprovado:'ap-g',condicional:'ap-c',mais_docs:'ap-m',reprovado:'ap-r'};
  const sel = document.getElementById(selMap[tipo]);
- if(sel) sel.style.boxShadow='0 0 0 3px rgba(79,70,229,.3)';
+ if(sel) sel.style.boxShadow='0 0 0 3px rgba(21,116,110,.3)';
 }
 
 async function submitAnalise() {
@@ -3574,7 +3575,7 @@ document.querySelectorAll('.mo').forEach(mo => {
  </div>
  </div>
  <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
- ${!done ? `<button onclick="docCardUpload('${d.id}')" title="Anexar arquivo (PDF, JPG, PNG)" style="background:#191824;border:1px solid #191824;color:#fff;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:11.5px;font-weight:600;font-family:Inter,sans-serif">Anexar</button>` : ''}
+ ${!done ? `<button onclick="docCardUpload('${d.id}')" title="Anexar arquivo (PDF, JPG, PNG)" style="background:#15746E;border:1px solid #15746E;color:#fff;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:11.5px;font-weight:600;font-family:Inter,sans-serif">Anexar</button>` : ''}
  ${!done ? `<button onclick="docCardColar('${d.id}')" title="Digitar ou colar texto" style="background:#fff;border:1px solid #D6D2CB;color:#2E2B3A;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:11.5px;font-weight:500;font-family:Inter,sans-serif">Digitar</button>` : ''}
  ${(st.blobId || st.ocr) ? `<button onclick="visualizarDoc('${st.blobId||''}', { titulo: '${(d.nome||'').replace(/'/g,'')}', dados: ${st.ocr ? 'PESCADO_DOCS[\'' + d.id + '\'].ocr' : 'null'} })" title="Visualizar documento" style="background:#fff;border:1px solid #D6D2CB;color:#2E2B3A;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:11.5px;font-weight:500;font-family:Inter,sans-serif">Ver</button>` : ''}
  ${done ? `<button onclick="docCardUpload('${d.id}')" title="Trocar arquivo" style="background:#fff;border:1px solid #D6D2CB;color:#2E2B3A;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:11.5px;font-weight:500;font-family:Inter,sans-serif">Trocar</button>` : ''}
@@ -5675,16 +5676,17 @@ window.imprimirFichaAtual = function(){
     if (document.getElementById("pescado-login-overlay")) return;
     var ov = document.createElement("div");
     ov.id = "pescado-login-overlay";
-    ov.style.cssText = "position:fixed;inset:0;background:#191824;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif";
+    ov.style.cssText = "position:fixed;inset:0;background:#0A3332;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif";
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:36px 38px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
-      '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;color:#191824;margin-bottom:4px">Pescado Credito</div>' +
-      '<div style="font-size:12px;color:#888;margin-bottom:24px;text-transform:uppercase;letter-spacing:.08em">Analise - Black Eagle</div>' +
+      '<div style="text-align:center;margin-bottom:14px"><img src="/logo-lagostao.png" alt="Lagostao" style="width:72px;height:72px;object-fit:contain"/></div>' +
+      '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;color:#0A3332;margin-bottom:4px;text-align:center">Lagostao Credito</div>' +
+      '<div style="font-size:12px;color:#15746E;margin-bottom:24px;text-transform:uppercase;letter-spacing:.08em;text-align:center">Analise de credito</div>' +
       '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Email</label>' +
       '<input id="pl-user" type="email" autocomplete="username" style="width:100%;padding:10px 12px;border:1px solid #D6D2CB;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;margin-bottom:16px;box-sizing:border-box" />' +
       '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Senha</label>' +
       '<input id="pl-pass" type="password" autocomplete="current-password" style="width:100%;padding:10px 12px;border:1px solid #D6D2CB;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;margin-bottom:6px;box-sizing:border-box" />' +
       '<div id="pl-err" style="color:#dc2626;font-size:12px;margin-bottom:10px;min-height:16px"></div>' +
-      '<button id="pl-go" style="width:100%;padding:12px;background:#191824;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Entrar</button>' +
+      '<button id="pl-go" style="width:100%;padding:12px;background:#15746E;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Entrar</button>' +
       '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0eee9;font-size:11px;color:#999;text-align:center">' +
       '<a href="#" id="pl-trocar" style="color:#666;text-decoration:none">Trocar senha</a>' +
       '</div></div>';
@@ -5857,7 +5859,7 @@ window.imprimirFichaAtual = function(){
       + '<div id="pa-sug" style="padding:8px 12px;border-top:1px solid #E8E5DE;background:#fff;display:flex;flex-wrap:wrap;gap:6px"></div>'
       + '<div style="padding:10px 12px;border-top:1px solid #E8E5DE;background:#fff;display:flex;gap:8px">'
       +   '<textarea id="pa-inp" placeholder="Pergunte algo sobre essa ficha..." rows="2" style="flex:1;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:12.5px;font-family:Inter,sans-serif;resize:none"></textarea>'
-      +   '<button id="pa-send" style="background:#191824;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;font-family:Inter,sans-serif">Enviar</button>'
+      +   '<button id="pa-send" style="background:#15746E;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600;font-family:Inter,sans-serif">Enviar</button>'
       + '</div>';
     document.body.appendChild(m);
 
