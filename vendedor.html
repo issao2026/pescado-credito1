@@ -32,9 +32,11 @@ h2 { font-family:'Poppins',sans-serif; font-size:22px; font-weight:700; color:va
 .upload-box:hover { border-color:var(--acc); background:#F0F7F6; }
 .upload-box .ic { font-size:22px; color:var(--acc); margin-bottom:6px; }
 .upload-box .lbl { font-size:13px; color:var(--txt); font-weight:600; }
-.upload-box .hint { font-size:11px; color:var(--mu) !important; margin-top:4px; text-decoration:none !important; }
-.upload-box .hint * { color:var(--mu) !important; text-decoration:none !important; }
-a[href^="mailto"], a[href^="tel"] { color:inherit !important; text-decoration:none !important; }
+.upload-box .hint { font-size:11px; color:#5F7573 !important; margin-top:4px; text-decoration:none !important; -webkit-user-select:none; user-select:none; pointer-events:none; }
+.upload-box .hint * { color:#5F7573 !important; text-decoration:none !important; background:transparent !important; border:0 !important; }
+.upload-box .lbl { pointer-events:none; }
+a[href^="mailto"], a[href^="tel"], a[href^="http"] { color:inherit !important; text-decoration:none !important; background:transparent !important; }
+* { -webkit-tap-highlight-color:transparent; }
 .file-list { margin-top:10px; }
 .file-item { display:flex; align-items:center; gap:8px; padding:6px 10px; background:#F0F7F6; border-radius:6px; font-size:12px; margin-bottom:4px; }
 .file-item .rm { margin-left:auto; background:none; border:none; color:var(--err); cursor:pointer; font-size:16px; }
@@ -115,10 +117,10 @@ a[href^="mailto"], a[href^="tel"] { color:inherit !important; text-decoration:no
 
     <div class="section">
       <div class="section-title">Documentos (opcional)</div>
-      <label for="v-files" class="upload-box">
-        <div class="ic">↑</div>
+      <label for="v-files" class="upload-box" translate="no">
+        <div class="ic">&#8593;</div>
         <div class="lbl">Clique para anexar arquivos</div>
-        <div class="hint">Cartão CNPJ, contrato social, comprovantes, RG/CPF, referências (PDF, JPG, PNG)</div>
+        <div class="hint">Aceita PDF, JPG e PNG. Ex.: cart&#227;o do CNPJ, contrato social, comprovantes.</div>
       </label>
       <input id="v-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none">
       <div id="file-list" class="file-list"></div>

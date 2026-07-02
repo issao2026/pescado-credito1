@@ -20,8 +20,17 @@
       }
       if (F.prazo && !((r.prazo||'').toLowerCase().includes(F.prazo.toLowerCase()))) return false;
       if (F.busca){
-        const q = F.busca.toLowerCase();
-        if (!((r.cliente||'').toLowerCase().includes(q) || (r.cnpj||'').includes(q))) return false;
+        var q = F.busca.trim().toLowerCase();
+        if (q){
+          var qDig = q.replace(/\D/g,'');
+          var strip = function(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+          var cliNorm = strip((r.cliente||'').toLowerCase());
+          var qNorm = strip(q);
+          var cnpjDig = (r.cnpj||'').replace(/\D/g,'');
+          var okNome = cliNorm.indexOf(qNorm) >= 0;
+          var okCnpj = qDig.length >= 3 && cnpjDig.indexOf(qDig) >= 0;
+          if (!okNome && !okCnpj) return false;
+        }
       }
       return true;
     });
@@ -58,7 +67,7 @@
       const sorted = Object.entries(pv).sort((a,b)=>b[1]-a[1]);
       h = '<div style="font-size:13px;color:#5F7573;margin-bottom:14px">Distribuicao dos <b style="color:#0A3332">'+filt.length+'</b> clientes por vendedor:</div>';
       h += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#F5F7F6"><th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#5F7573">Vendedor</th><th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;color:#5F7573">Clientes</th><th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;color:#5F7573">%</th></tr></thead><tbody>';
-      sorted.forEach(([v,c])=>{ const pct = (c/filt.length*100).toFixed(1); h += '<tr style="border-bottom:1px solid #EEF2F1"><td style="padding:8px 12px;color:#0A3332;font-weight:600">'+v+'</td><td style="padding:8px 12px;text-align:right;font-weight:600">'+c+'</td><td style="padding:8px 12px;text-align:right;color:#5F7573">'+pct+'%</td></tr>'; });
+      sorted.forEach(([v,c])=>{ const pct = (c/filt.length*100).toFixed(1); h += '<tr onclick="filtrarPorVendedor(\''+v.replace(/\x27/g,"\\\x27")+'\')" style="border-bottom:1px solid #EEF2F1;cursor:pointer" onmouseover="this.style.background=\'#F5F7F6\'" onmouseout="this.style.background=\'\'"><td style="padding:8px 12px;color:#0A3332;font-weight:600">'+v+' ↗</td><td style="padding:8px 12px;text-align:right;font-weight:600">'+c+'</td><td style="padding:8px 12px;text-align:right;color:#5F7573">'+pct+'%</td></tr>'; });
       h += '</tbody></table>';
     }
     else if (tipo === 'vendedores'){
@@ -66,7 +75,7 @@
       const so = Object.entries(v).sort((a,b)=>b[1].fichas-a[1].fichas);
       t = 'Vendedores ativos: ' + so.length; s = 'Desempenho de cada vendedor';
       h = '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="background:#F5F7F6"><th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#5F7573">Vendedor</th><th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;color:#5F7573">Fichas</th><th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;color:#5F7573">Aprovadas</th><th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;color:#5F7573">Total limite</th><th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;color:#5F7573">Score med</th></tr></thead><tbody>';
-      so.forEach(([nome,d])=>{ const sm = d.scoreMed.length?Math.round(d.scoreMed.reduce((a,b)=>a+b,0)/d.scoreMed.length):'-'; h += '<tr style="border-bottom:1px solid #EEF2F1"><td style="padding:8px 12px;color:#0A3332;font-weight:600">'+nome+'</td><td style="padding:8px 12px;text-align:right;font-weight:600">'+d.fichas+'</td><td style="padding:8px 12px;text-align:right">'+d.comLimite+'</td><td style="padding:8px 12px;text-align:right;font-weight:600">'+R$dr(d.totalLimite)+'</td><td style="padding:8px 12px;text-align:right">'+sm+'</td></tr>'; });
+      so.forEach(([nome,d])=>{ const sm = d.scoreMed.length?Math.round(d.scoreMed.reduce((a,b)=>a+b,0)/d.scoreMed.length):'-'; h += '<tr onclick="filtrarPorVendedor(\''+nome.replace(/\x27/g,"\\\x27")+'\')" style="border-bottom:1px solid #EEF2F1;cursor:pointer" onmouseover="this.style.background=\'#F5F7F6\'" onmouseout="this.style.background=\'\'"><td style="padding:8px 12px;color:#0A3332;font-weight:600">'+nome+' ↗</td><td style="padding:8px 12px;text-align:right;font-weight:600">'+d.fichas+'</td><td style="padding:8px 12px;text-align:right">'+d.comLimite+'</td><td style="padding:8px 12px;text-align:right;font-weight:600">'+R$dr(d.totalLimite)+'</td><td style="padding:8px 12px;text-align:right">'+sm+'</td></tr>'; });
       h += '</tbody></table>';
     }
     else if (tipo === 'score'){
@@ -84,8 +93,8 @@
       const t5 = filt.filter(r=>r.score>0).sort((a,b)=>b.score-a.score).slice(0,5);
       const b5 = filt.filter(r=>r.score>0).sort((a,b)=>a.score-b.score).slice(0,5);
       h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
-      h += '<div><div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:8px">Top 5 maiores</div>'+t5.map(r=>'<div style="padding:6px 10px;background:#D1FAE5;border-radius:6px;margin-bottom:4px;font-size:12px"><b>'+r.cliente+'</b> <span style="color:#059669;font-weight:700;float:right">'+r.score+'</span></div>').join('')+'</div>';
-      h += '<div><div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;margin-bottom:8px">Top 5 menores</div>'+b5.map(r=>'<div style="padding:6px 10px;background:#FEE2E2;border-radius:6px;margin-bottom:4px;font-size:12px"><b>'+r.cliente+'</b> <span style="color:#DC2626;font-weight:700;float:right">'+r.score+'</span></div>').join('')+'</div></div>';
+      h += '<div><div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:8px">Top 5 maiores</div>'+t5.map(r=>'<div onclick="verFichaLagostao(0,\''+(r.cnpj||'').replace(/\x27/g,"\\\x27")+'\')" style="padding:6px 10px;background:#D1FAE5;border-radius:6px;margin-bottom:4px;font-size:12px;cursor:pointer" onmouseover="this.style.background=\'#A7F3D0\'" onmouseout="this.style.background=\'#D1FAE5\'"><b>'+r.cliente+'</b> <span style="color:#059669;font-weight:700;float:right">'+r.score+'</span></div>').join('')+'</div>';
+      h += '<div><div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;margin-bottom:8px">Top 5 menores</div>'+b5.map(r=>'<div onclick="verFichaLagostao(0,\''+(r.cnpj||'').replace(/\x27/g,"\\\x27")+'\')" style="padding:6px 10px;background:#FEE2E2;border-radius:6px;margin-bottom:4px;font-size:12px;cursor:pointer" onmouseover="this.style.background=\'#FCA5A5\'" onmouseout="this.style.background=\'#FEE2E2\'"><b>'+r.cliente+'</b> <span style="color:#DC2626;font-weight:700;float:right">'+r.score+'</span></div>').join('')+'</div></div>';
     }
 
     else if (tipo === 'com_limite'){
@@ -140,6 +149,18 @@
     window.abrirModalDrill(t, s, h);
   };
 
+
+  window.filtrarPorVendedor = function(v){
+    window._BI_LAG_FILTERS.vendedor = v;
+    var m = document.getElementById('kpi-drill-modal'); if (m) m.remove();
+    if (window.render) window.render();
+  };
+  window.filtrarPorSaida = function(s){
+    window._BI_LAG_FILTERS.saida = s;
+    var m = document.getElementById('kpi-drill-modal'); if (m) m.remove();
+    if (window.render) window.render();
+  };
+
   window.pgBILagostao = function(){
     const L = (window.LAGOSTAO_DATA || []);
     if (!L.length) return '<div style="padding:40px;text-align:center;color:#5F7573">Carregando...</div>';
@@ -179,31 +200,31 @@
     const sd = {Lagostao:0, Global:0, JP:0};
     filt.forEach(r => (r.saidas||[]).forEach(s => { if(sd[s]!==undefined) sd[s]++; }));
     const e1 = document.getElementById('ch-saidas');
-    if (e1) new Chart(e1, { type:'doughnut', data:{ labels:Object.keys(sd), datasets:[{ data:Object.values(sd), backgroundColor:[CORES.verde, CORES.verdeDark, CORES.roxo], borderColor:'#fff', borderWidth:2 }]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:10 }} }}});
+    if (e1) new Chart(e1, { type:'doughnut', data:{ labels:Object.keys(sd), datasets:[{ data:Object.values(sd), backgroundColor:[CORES.verde, CORES.verdeDark, CORES.roxo], borderColor:'#fff', borderWidth:2 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorSaida(Object.keys(sd)[el[0].index]); }}, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:10 }} }}});
 
     const scF = filt.map(r=>r.score).filter(s=>s>0);
     const rB = scF.filter(s=>s>700).length, rM = scF.filter(s=>s>=601 && s<=700).length, rE = scF.filter(s=>s>=501 && s<=600).length, rA = scF.filter(s=>s<501 && s>0).length, rS = filt.length - scF.length;
     const e2 = document.getElementById('ch-risco');
-    if (e2) new Chart(e2, { type:'doughnut', data:{ labels:['Baixo (>700)','Moderado (601-700)','Elevado (501-600)','Alto (<500)','Sem score'], datasets:[{ data:[rB,rM,rE,rA,rS], backgroundColor:[CORES.verdeOk, CORES.amarelo, CORES.laranja, CORES.vermelho, CORES.cinza], borderColor:'#fff', borderWidth:2 }]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, padding:6, boxWidth:10 }} }}});
+    if (e2) new Chart(e2, { type:'doughnut', data:{ labels:['Baixo (>700)','Moderado (601-700)','Elevado (501-600)','Alto (<500)','Sem score'], datasets:[{ data:[rB,rM,rE,rA,rS], backgroundColor:[CORES.verdeOk, CORES.amarelo, CORES.laranja, CORES.vermelho, CORES.cinza], borderColor:'#fff', borderWidth:2 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var keys=['baixo','moderado','elevado','alto','sem_score']; window._BI_LAG_FILTERS.risco=keys[el[0].index]; render(); }}, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, padding:6, boxWidth:10 }} }}});
 
     const vd = {}; filt.forEach(r => { vd[r.vendedor] = (vd[r.vendedor]||0)+1; });
     const tV = Object.entries(vd).sort((a,b)=>b[1]-a[1]).slice(0,10);
     const e3 = document.getElementById('ch-vendedores');
-    if (e3) new Chart(e3, { type:'bar', data:{ labels:tV.map(v=>v[0]), datasets:[{ label:'Fichas', data:tV.map(v=>v[1]), backgroundColor:CORES.verde, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
+    if (e3) new Chart(e3, { type:'bar', data:{ labels:tV.map(v=>v[0]), datasets:[{ label:'Fichas', data:tV.map(v=>v[1]), backgroundColor:CORES.verde, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorVendedor(tV[el[0].index][0]); }}, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
     const spv = {}; filt.forEach(r => { if (r.score>0){ if (!spv[r.vendedor]) spv[r.vendedor] = []; spv[r.vendedor].push(r.score); }});
     const smv = Object.entries(spv).map(([v,a]) => ({v, med: Math.round(a.reduce((x,y)=>x+y,0)/a.length), n: a.length})).filter(o => o.n >= 2).sort((a,b)=>b.med-a.med).slice(0,10);
     const e4 = document.getElementById('ch-score-vend');
-    if (e4) new Chart(e4, { type:'bar', data:{ labels: smv.map(o=>o.v), datasets:[{ label:'Score', data:smv.map(o=>o.med), backgroundColor: smv.map(o=>o.med>700?CORES.verdeOk:o.med>=601?CORES.amarelo:o.med>=501?CORES.laranja:CORES.vermelho), borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}}, scales:{ x:{ min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
+    if (e4) new Chart(e4, { type:'bar', data:{ labels: smv.map(o=>o.v), datasets:[{ label:'Score', data:smv.map(o=>o.med), backgroundColor: smv.map(o=>o.med>700?CORES.verdeOk:o.med>=601?CORES.amarelo:o.med>=501?CORES.laranja:CORES.vermelho), borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorVendedor(smv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
     const tpv = {}; filt.forEach(r => { if (r.limite>0){ if (!tpv[r.vendedor]) tpv[r.vendedor] = []; tpv[r.vendedor].push(r.limite); }});
     const tmv = Object.entries(tpv).map(([v,a]) => ({v, med: Math.round(a.reduce((x,y)=>x+y,0)/a.length), n:a.length})).filter(o => o.n >= 2).sort((a,b)=>b.med-a.med).slice(0,10);
     const e5 = document.getElementById('ch-ticket-vend');
-    if (e5) new Chart(e5, { type:'bar', data:{ labels:tmv.map(o=>o.v), datasets:[{ label:'Ticket', data:tmv.map(o=>o.med), backgroundColor:CORES.verdeDark, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
+    if (e5) new Chart(e5, { type:'bar', data:{ labels:tmv.map(o=>o.v), datasets:[{ label:'Ticket', data:tmv.map(o=>o.med), backgroundColor:CORES.verdeDark, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorVendedor(tmv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
     const pts = filt.filter(r=>r.score>0 && r.limite>0).map(r => ({ x:r.score, y:r.limite, cliente:r.cliente, backgroundColor:r.score>700?CORES.verdeOk:r.score>=601?CORES.amarelo:r.score>=501?CORES.laranja:CORES.vermelho }));
     const e6 = document.getElementById('ch-scatter');
-    if (e6) new Chart(e6, { type:'scatter', data:{ datasets:[{ label:'Cliente', data:pts, backgroundColor: pts.map(p=>p.backgroundColor), borderColor: pts.map(p=>p.backgroundColor), pointRadius:5, pointHoverRadius:8 }]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>pts[c.dataIndex].cliente+' | Score '+c.parsed.x+' | R$ '+c.parsed.y.toLocaleString('pt-BR')}}}, scales:{ x:{ title:{display:true,text:'Score',font:{size:10}}, min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ title:{display:true,text:'Limite (R$)',font:{size:10}}, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}}}});
+    if (e6) new Chart(e6, { type:'scatter', data:{ datasets:[{ label:'Cliente', data:pts, backgroundColor: pts.map(p=>p.backgroundColor), borderColor: pts.map(p=>p.backgroundColor), pointRadius:5, pointHoverRadius:8 }]}, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var r=filt.filter(x=>x.score>0 && x.limite>0)[el[0].index]; if(r) verFichaLagostao(0, r.cnpj); }}, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>pts[c.dataIndex].cliente+' | Score '+c.parsed.x+' | R$ '+c.parsed.y.toLocaleString('pt-BR')}}}, scales:{ x:{ title:{display:true,text:'Score',font:{size:10}}, min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ title:{display:true,text:'Limite (R$)',font:{size:10}}, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}}}});
 
     const sL = ['Lagostao','Global','JP']; const rL = ['Baixo','Moderado','Elevado','Alto','Sem'];
     const dR = rL.map((lbl, li) => {
@@ -212,7 +233,7 @@
       return { label:lbl, data:dA, backgroundColor:co[li] };
     });
     const e7 = document.getElementById('ch-risco-saida');
-    if (e7) new Chart(e7, { type:'bar', data:{ labels:sL, datasets:dR }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom', labels:{font:{size:10}, padding:6, boxWidth:10}}}, scales:{ x:{ stacked:true, grid:{display:false}}, y:{ stacked:true, grid:{color:'rgba(0,0,0,.04)'}}}}});
+    if (e7) new Chart(e7, { type:'bar', data:{ labels:sL, datasets:dR }, options:{ responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorSaida(sL[el[0].index]); }}, plugins:{ legend:{position:'bottom', labels:{font:{size:10}, padding:6, boxWidth:10}}}, scales:{ x:{ stacked:true, grid:{display:false}}, y:{ stacked:true, grid:{color:'rgba(0,0,0,.04)'}}}}});
 
     const aA = new Date().getFullYear();
     const bA = {'< 5':0, '5-10':0, '10-20':0, '20-30':0, '> 30':0, 'Sem data':0};
