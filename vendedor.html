@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lagostão - Análise de Crédito (Vendedor)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --dark:#0A3332; --acc:#15746E; --bg:#F5F7F6; --txt:#0A3332; --mu:#5F7573; --bdr:#D6DDDA; --err:#DC2626; --ok:#059669; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; line-height:1.5; }
+.topbar { background:var(--dark); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:12px; }
+.topbar img { width:32px; height:32px; object-fit:contain; }
+.topbar h1 { font-family:'Poppins',sans-serif; font-size:16px; font-weight:700; letter-spacing:-.01em; }
+.topbar .sub { font-size:11px; color:#8FB8B4; text-transform:uppercase; letter-spacing:.08em; margin-top:2px; }
+.wrap { max-width:720px; margin:32px auto; padding:0 20px; }
+.card { background:#fff; border:1px solid var(--bdr); border-radius:14px; padding:32px; box-shadow:0 4px 12px rgba(10,51,50,.04); }
+h2 { font-family:'Poppins',sans-serif; font-size:22px; font-weight:700; color:var(--dark); letter-spacing:-.02em; margin-bottom:6px; }
+.lead { font-size:13px; color:var(--mu); margin-bottom:24px; }
+.section { border-top:1px solid #EEF2F1; padding-top:20px; margin-top:20px; }
+.section-title { font-size:11px; color:var(--mu); text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; font-weight:700; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid1 { display:grid; grid-template-columns:1fr; gap:14px; }
+.fg { display:flex; flex-direction:column; }
+.fg label { font-size:11px; font-weight:600; color:var(--mu); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.fg .req { color:var(--err); }
+.fg input, .fg select, .fg textarea { padding:10px 12px; border:1px solid var(--bdr); border-radius:8px; font-size:13.5px; font-family:'Inter',sans-serif; background:#fff; color:var(--txt); }
+.fg input:focus, .fg select:focus, .fg textarea:focus { outline:none; border-color:var(--acc); box-shadow:0 0 0 3px rgba(21,116,110,.12); }
+.fg textarea { min-height:80px; resize:vertical; }
+.upload-box { border:2px dashed var(--bdr); border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:.15s; background:#FAFCFB; }
+.upload-box:hover { border-color:var(--acc); background:#F0F7F6; }
+.upload-box .ic { font-size:22px; color:var(--acc); margin-bottom:6px; }
+.upload-box .lbl { font-size:13px; color:var(--txt); font-weight:600; }
+.upload-box .hint { font-size:11px; color:var(--mu); margin-top:4px; }
+.file-list { margin-top:10px; }
+.file-item { display:flex; align-items:center; gap:8px; padding:6px 10px; background:#F0F7F6; border-radius:6px; font-size:12px; margin-bottom:4px; }
+.file-item .rm { margin-left:auto; background:none; border:none; color:var(--err); cursor:pointer; font-size:16px; }
+.btn { padding:12px 18px; border-radius:10px; border:none; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:.15s; }
+.btn-primary { background:var(--dark); color:#fff; }
+.btn-primary:hover { background:var(--acc); }
+.btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+.actions { display:flex; gap:10px; margin-top:24px; }
+.ok-panel { text-align:center; padding:40px 20px; }
+.ok-panel .check { width:64px; height:64px; border-radius:50%; background:#D1FAE5; color:var(--ok); font-size:32px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-weight:800; }
+.ok-panel h3 { font-family:'Poppins',sans-serif; font-size:20px; color:var(--dark); margin-bottom:8px; }
+.ok-panel p { color:var(--mu); font-size:13.5px; }
+.protocol { display:inline-block; background:#F0F7F6; padding:6px 12px; border-radius:6px; font-family:monospace; font-size:12px; color:var(--dark); margin-top:14px; }
+.err-msg { background:#FEE2E2; color:#7F1D1D; padding:10px 12px; border-radius:8px; font-size:12.5px; margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="/logo-lagostao.png" alt="Lagostao">
+  <div>
+    <h1>Lagostão Pescados</h1>
+    <div class="sub">Solicitação de Análise de Crédito</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card" id="form-card">
+    <h2>Nova solicitação</h2>
+    <p class="lead">Preencha os dados do cliente. Ao enviar, a solicitação vai pra fila do Departamento de Crédito. Você recebe o retorno por email.</p>
+
+    <div class="section" style="border:none;padding:0;margin:0">
+      <div class="section-title">Seus dados (vendedor)</div>
+      <div class="grid2">
+        <div class="fg"><label>Nome completo <span class="req">*</span></label><input id="v-nome" placeholder="Seu nome" required></div>
+        <div class="fg"><label>Email <span class="req">*</span></label><input id="v-email" type="email" placeholder="seu@lagostaopescados.com.br" required></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Dados do cliente</div>
+      <div class="grid1">
+        <div class="fg"><label>Razão Social / Nome <span class="req">*</span></label><input id="c-nome" placeholder="Nome do cliente ou empresa" required></div>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="fg"><label>CNPJ / CPF <span class="req">*</span></label><input id="c-doc" placeholder="00.000.000/0000-00" required></div>
+        <div class="fg"><label>Tipo <span class="req">*</span></label><select id="c-tipo"><option value="PJ">Pessoa Jurídica</option><option value="PF">Pessoa Física</option></select></div>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="fg"><label>Valor pretendido (R$) <span class="req">*</span></label><input id="c-valor" placeholder="Ex: 10.000,00" required></div>
+        <div class="fg"><label>Prazo pretendido</label>
+          <select id="c-prazo">
+            <option>A vista</option>
+            <option>7 dias</option>
+            <option selected>14 dias</option>
+            <option>21 dias</option>
+            <option>28 dias</option>
+            <option>35 dias</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="fg"><label>Email do cliente</label><input id="c-email" type="email" placeholder="opcional"></div>
+        <div class="fg"><label>Telefone do cliente</label><input id="c-tel" placeholder="opcional"></div>
+      </div>
+      <div class="grid1" style="margin-top:14px">
+        <div class="fg"><label>Observações</label><textarea id="c-obs" placeholder="Contexto do relacionamento, histórico, urgência, informações relevantes..."></textarea></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Documentos (opcional)</div>
+      <label for="v-files" class="upload-box">
+        <div class="ic">↑</div>
+        <div class="lbl">Clique para anexar arquivos</div>
+        <div class="hint">Cartão CNPJ, contrato social, comprovantes, RG/CPF, referências (PDF, JPG, PNG)</div>
+      </label>
+      <input id="v-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none">
+      <div id="file-list" class="file-list"></div>
+    </div>
+
+    <div id="err-box"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-enviar" onclick="enviar()" style="flex:1">Enviar solicitação</button>
+    </div>
+  </div>
+
+  <div class="card ok-panel" id="ok-card" style="display:none">
+    <div class="check">✓</div>
+    <h3>Solicitação enviada</h3>
+    <p>Recebemos os dados. Você e o cliente serão notificados por email assim que a análise for concluída.</p>
+    <div class="protocol" id="protocol">—</div>
+    <div class="actions" style="justify-content:center;margin-top:24px">
+      <button class="btn btn-primary" onclick="location.reload()">Nova solicitação</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const arquivos = [];
+document.getElementById("v-files").addEventListener("change", function(e){
+  const arr = Array.from(e.target.files || []);
+  arr.forEach(f => arquivos.push(f));
+  atualizarLista();
+});
+function atualizarLista(){
+  const box = document.getElementById("file-list");
+  box.innerHTML = arquivos.map((f, i) => `<div class="file-item">📎 ${f.name} <span style="color:#9AA;font-size:11px">(${(f.size/1024).toFixed(1)} KB)</span> <button class="rm" onclick="removerArq(${i})">×</button></div>`).join("");
+}
+function removerArq(i){ arquivos.splice(i,1); atualizarLista(); }
+
+function fmtDoc(v){ return String(v||"").replace(/\D/g,""); }
+
+async function enviar(){
+  const err = document.getElementById("err-box");
+  err.innerHTML = "";
+  const vNome = document.getElementById("v-nome").value.trim();
+  const vEmail = document.getElementById("v-email").value.trim();
+  const cNome = document.getElementById("c-nome").value.trim();
+  const cDoc = document.getElementById("c-doc").value.trim();
+  const cValor = document.getElementById("c-valor").value.trim();
+
+  const faltando = [];
+  if (!vNome) faltando.push("Nome do vendedor");
+  if (!vEmail || !vEmail.includes("@")) faltando.push("Email do vendedor válido");
+  if (!cNome) faltando.push("Razão Social / Nome do cliente");
+  if (!cDoc || fmtDoc(cDoc).length < 11) faltando.push("CPF/CNPJ do cliente");
+  if (!cValor) faltando.push("Valor pretendido");
+  if (faltando.length){
+    err.innerHTML = '<div class="err-msg">Faltam: ' + faltando.join(", ") + '</div>';
+    return;
+  }
+
+  const btn = document.getElementById("btn-enviar");
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  const payload = {
+    nome: cNome,
+    tipo: document.getElementById("c-tipo").value,
+    cnpj: fmtDoc(cDoc),
+    valor: parseFloat(cValor.replace(/\./g,"").replace(",",".")) || 0,
+    prazo: document.getElementById("c-prazo").value,
+    vendedor: vNome,
+    email_vendedor: vEmail,
+    email_cliente: document.getElementById("c-email").value.trim(),
+    telefone_cliente: document.getElementById("c-tel").value.trim(),
+    observacoes: document.getElementById("c-obs").value.trim(),
+    status: "Aguardando análise",
+    origem: "vendedor"
+  };
+
+  try {
+    const r = await fetch("/api/fichas", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    const j = await r.json();
+    if (!r.ok || !j.id){
+      err.innerHTML = '<div class="err-msg">Erro ao enviar: ' + (j.erro || j.detalhe || "tente novamente") + '</div>';
+      btn.disabled = false;
+      btn.textContent = "Enviar solicitação";
+      return;
+    }
+    document.getElementById("form-card").style.display = "none";
+    document.getElementById("ok-card").style.display = "block";
+    document.getElementById("protocol").textContent = "Protocolo: " + j.id.substring(0,8).toUpperCase();
+  } catch(e){
+    err.innerHTML = '<div class="err-msg">Erro de conexão: ' + e.message + '</div>';
+    btn.disabled = false;
+    btn.textContent = "Enviar solicitação";
+  }
+}
+</script>
+</body>
+</html>
