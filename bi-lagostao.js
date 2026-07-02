@@ -103,8 +103,12 @@
       h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">';
       h += '<div style="background:#D1FAE5;padding:14px;border-radius:10px"><div style="font-size:11px;color:#059669;text-transform:uppercase;font-weight:700">Com limite</div><div style="font-family:Poppins,sans-serif;font-size:28px;font-weight:800;color:#059669;margin-top:6px">'+comL.length+'</div><div style="font-size:12px;color:#065F46;margin-top:2px">'+((comL.length/filt.length*100)||0).toFixed(1)+'% da base</div></div>';
       h += '<div style="background:#FEE2E2;padding:14px;border-radius:10px"><div style="font-size:11px;color:#DC2626;text-transform:uppercase;font-weight:700">Sem limite / A vista</div><div style="font-family:Poppins,sans-serif;font-size:28px;font-weight:800;color:#DC2626;margin-top:6px">'+semL.length+'</div><div style="font-size:12px;color:#7F1D1D;margin-top:2px">'+((semL.length/filt.length*100)||0).toFixed(1)+'% da base</div></div></div>';
-      h += '<div style="font-size:11px;font-weight:700;color:#5F7573;text-transform:uppercase;margin-bottom:8px">Clientes sem limite</div>';
-      h += '<div style="max-height:280px;overflow-y:auto">'+semL.slice(0,50).map(r=>'<div onclick="verFichaLagostao(0,\''+(r.cnpj||'')+'\')" style="padding:8px 12px;border-bottom:1px solid #EEF2F1;font-size:12.5px;cursor:pointer;transition:.12s" onmouseover="this.style.background=\'#F5F7F6\'" onmouseout="this.style.background=\'\'"><b>'+r.cliente+'</b> <span style="color:#5F7573;font-size:11px;margin-left:8px">'+r.vendedor+'</span> <span style="float:right;color:#DC2626;font-weight:600">Score: '+(r.score||'-')+'</span></div>').join('')+'</div>';
+      // v4.39: duas colunas — com limite (verde) + sem limite (vermelho), todas clicaveis
+      var comLord = comL.slice().sort((a,b)=>(b.limite||0)-(a.limite||0));
+      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+      h += '<div><div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:8px">Com limite ('+comL.length+')</div><div style="max-height:340px;overflow-y:auto;border:1px solid #D1FAE5;border-radius:8px">'+comLord.slice(0,80).map(function(r){return '<div onclick="verFichaLagostao(0,\''+(r.cnpj||'')+'\')" style="padding:8px 12px;border-bottom:1px solid #EEF2F1;font-size:12.5px;cursor:pointer;transition:.12s" onmouseover="this.style.background=\'#D1FAE5\'" onmouseout="this.style.background=\'\'"><b>'+r.cliente+'</b> <span style="color:#5F7573;font-size:11px;display:block;margin-top:2px">'+r.vendedor+' · Score '+(r.score||'-')+'</span> <span style="float:right;color:#059669;font-weight:700;margin-top:-16px">'+R$dr(r.limite)+'</span></div>';}).join('')+'</div></div>';
+      h += '<div><div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;margin-bottom:8px">Sem limite / A vista ('+semL.length+')</div><div style="max-height:340px;overflow-y:auto;border:1px solid #FEE2E2;border-radius:8px">'+semL.slice(0,80).map(function(r){return '<div onclick="verFichaLagostao(0,\''+(r.cnpj||'')+'\')" style="padding:8px 12px;border-bottom:1px solid #EEF2F1;font-size:12.5px;cursor:pointer;transition:.12s" onmouseover="this.style.background=\'#FEE2E2\'" onmouseout="this.style.background=\'\'"><b>'+r.cliente+'</b> <span style="color:#5F7573;font-size:11px;display:block;margin-top:2px">'+r.vendedor+'</span> <span style="float:right;color:#DC2626;font-weight:600;margin-top:-16px">Score '+(r.score||'-')+'</span></div>';}).join('')+'</div></div>';
+      h += '</div>';
     }
     else if (tipo === 'ticket'){
       const lim = filt.map(r=>r.limite).filter(x=>x>0).sort((a,b)=>a-b);
@@ -186,11 +190,13 @@
 
     let breadcrumb = '';
     if (chipsAtivos.length){
-      breadcrumb = '<div style="background:#0A3332;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;color:#B8DDD9;text-transform:uppercase;font-weight:700;letter-spacing:.08em">Filtro ativo:</span>';
+      // v4.39b: "Filtro ativo" e "label:" maiores
+      breadcrumb = '<div style="background:#0A3332;color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-family:Poppins,sans-serif;font-size:15px;color:#B8DDD9;text-transform:uppercase;font-weight:800;letter-spacing:.08em">Filtro ativo:</span>';
       chipsAtivos.forEach(c=>{
-        breadcrumb += '<span style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:8px">'
-          + c.label + ': <b>' + c.valor + '</b>'
-          + '<span onclick="window._BI_LAG_FILTERS.' + c.campo + '=\'\';render()" style="cursor:pointer;background:rgba(255,255,255,.2);border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700" title="Remover filtro">×</span>'
+        breadcrumb += '<span style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:16px;display:inline-flex;align-items:center;gap:12px">'
+          + '<span style="font-family:Poppins,sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:14px;font-weight:700;color:#B8DDD9">' + c.label + ':</span>'
+          + '<b style="font-family:Poppins,sans-serif;font-size:18px;font-weight:800;letter-spacing:-.01em;color:#fff">' + c.valor + '</b>'
+          + '<span onclick="window._BI_LAG_FILTERS.' + c.campo + '=\'\';render()" style="cursor:pointer;background:rgba(255,255,255,.22);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700" title="Remover filtro">×</span>'
           + '</span>';
       });
       breadcrumb += '<span style="margin-left:auto;font-size:13px;font-weight:600;color:#B8DDD9"><b style="color:#fff">' + filt.length + '</b> cliente' + (filt.length===1?'':'s') + ' encontrado' + (filt.length===1?'':'s') + '</span>';
