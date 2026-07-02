@@ -668,7 +668,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <div class="nav-grp">
  <div class="nav-grp-lbl">Principal</div>
  <div class="ni on" onclick="nav('dashboard')"><span class="ic">◼</span> Dashboard</div>
- <div class="ni" onclick="nav('fila')"><span class="ic">≡</span> Fila Operacional <span class="ct">7</span></div>
+ <div class="ni" onclick="nav('fila')"><span class="ic">≡</span> Fila Operacional <span class="ct" id="ct-fila">0</span></div>
  <div class="ni" onclick="nav('nova')"><span class="ic">+</span> Nova Análise</div>
  </div>
  <div class="nav-grp">
@@ -987,6 +987,15 @@ function render() {
  const fns = {dashboard:pgDash,fila:pgFila,nova:pgNova,politica:pgPolitica,relatorios:pgRelatorios,laudo:pgLaudo};
  document.getElementById('pg').innerHTML = (fns[D.page]||(() => ''))();
  afterRender();
+ // v4.24: sync contador da fila com dado real
+ try {
+   var _ctFila = document.getElementById('ct-fila');
+   if (_ctFila) {
+     var pendentes = (window.D?.analyses||[]).filter(a => !a.final || a.final === '—').length;
+     _ctFila.textContent = pendentes;
+     _ctFila.style.display = pendentes > 0 ? '' : 'none';
+   }
+ } catch(e){}
 }
 function afterRender() {
  if(D.page==='dashboard') buildCharts();
@@ -1015,17 +1024,40 @@ function afterRender() {
 // ══════════════════════════════════════
 function pgDash() {
  const A = D.analyses;
- const hoje = A.filter(x=>x.dt==='2026-05-18').length;
- const emAn = A.filter(x=>['Aguardando documentos','Aguardando Serasa','Aguardando CENPROT/cartório','Pronto para análise IA','Análise IA gerada','Aguardando revisão humana'].includes(x.status)).length;
+ // v4.24: hoje = fichas do dia atual (nao mais data fixa)
+ const _hj = new Date().toISOString().slice(0,10);
+ const hoje = A.filter(x=>(x.dt||'').startsWith(_hj)).length;
+ const emAn = A.filter(x=>['Aguardando documentos','Aguardando Serasa','Aguardando CENPROT/cartório','Pronto para análise IA','Análise IA gerada','Aguardando revisão humana','Aguardando análise'].includes(x.status)).length;
  const aprovados = A.filter(x=>x.final==='Aprovado').length;
  const aVista = A.filter(x=>x.final==='Somente à vista'||x.recIA==='Somente à vista').length;
  const aSerasa = A.filter(x=>x.serasa==='Não consultado').length;
  const aCenprot = A.filter(x=>x.cenprot==='Não consultado').length;
- const allAlerts = A.flatMap(x=>x.alerts.map(al=>({nm:x.nome,id:x.id,al,r:x.risco})));
- const totalValor = A.reduce((s,x)=>s+x.valor,0);
+ const allAlerts = A.flatMap(x=>(x.alerts||[]).map(al=>({nm:x.nome,id:x.id,al,r:x.risco})));
+ const totalValor = A.reduce((s,x)=>s+(x.valor||0),0);
  const criticos = A.filter(x=>['Alto','Elevado'].includes(x.risco)).length;
+ // v4.24: quadro de avisos - fichas do vendedor aguardando analise
+ const aguardando = A.filter(x=>x.status==='Aguardando análise' || (x.dados && x.dados.origem==='vendedor' && (!x.final || x.final==='—')));
 
- return `
+ return `${aguardando.length > 0 ? `
+<div style="background:linear-gradient(135deg,#0A3332 0%,#15746E 100%);border-radius:14px;padding:20px 26px;margin-bottom:22px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18)">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+   <div>
+     <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Quadro de avisos</div>
+     <div style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;margin-top:4px">Fichas do vendedor aguardando análise <span style="background:#DC2626;padding:2px 10px;border-radius:12px;font-size:12px;margin-left:6px;vertical-align:middle">${aguardando.length}</span></div>
+   </div>
+   <button onclick="setF('aguardando_analise');nav('fila')" style="background:#fff;color:#0A3332;border:none;border-radius:8px;padding:9px 16px;font-weight:600;font-size:13px;cursor:pointer">Ver todas →</button>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+ ${aguardando.slice(0,4).map(a => `
+   <div onclick="openAnalise('${a.id}')" style="background:rgba(255,255,255,.1);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:12px 14px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+     <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nome || '—'}</div>
+     <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px">CNPJ ${a.cnpj || '—'} · ${a.vendedor || '—'}</div>
+     <div style="font-size:11.5px;color:#B8DDD9;margin-top:6px;font-weight:600">R$ ${(a.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})} · ${a.prazo || '—'}</div>
+   </div>
+ `).join('')}
+ </div>
+</div>` : ''}
+`+`
 <!-- HERO ROW: dark summary card + KPI cards -->
 <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:24px;align-items:stretch">
 
@@ -1055,11 +1087,11 @@ function pgDash() {
 
  <!-- 5 KPI cards -->
  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
- ${kpiCard('','Recebidas hoje', hoje, '+1 vs ontem','up','#4F46E5','#EEF2FF','hoje')}
- ${kpiCard('','Em análise', emAn, '— vs ontem','neutral','#D97706','#FEF3C7','pendentes')}
- ${kpiCard('','Aguard. Serasa', aSerasa, '— vs ontem','neutral','#3B82F6','#DBEAFE','aguardando_consulta')}
- ${kpiCard('️','Aguard. Cenprot', aCenprot, '— vs ontem','neutral','#8B5CF6','#EDE9FE','aguardando_consulta')}
- ${kpiCard('','Aprovadas', aprovados, '— vs ontem','neutral','#059669','#D1FAE5','aprovados')}
+ ${kpiCard('','Recebidas hoje', hoje, '','neutral','#15746E','#D5E8E6','hoje')}
+ ${kpiCard('','Em análise', emAn, '','neutral','#D97706','#FEF3C7','pendentes')}
+ ${kpiCard('','Aguard. Serasa', aSerasa, '','neutral','#3B82F6','#DBEAFE','aguardando_consulta')}
+ ${kpiCard('️','Aguard. Cenprot', aCenprot, '','neutral','#8B5CF6','#EDE9FE','aguardando_consulta')}
+ ${kpiCard('','Aprovadas', aprovados, '','neutral','#059669','#D1FAE5','aprovados')}
  </div>
 </div>
 
@@ -1197,16 +1229,28 @@ function buildCharts() {
  plugins_list: []
  });
 
- // Volume diário — curva com gradiente (via plugin)
+ // Volume diário — curva com gradiente (via plugin), calculada a partir das fichas REAIS
  const cvEl = document.getElementById('cv');
  if(cvEl){
+ // Calcula distribuicao dos ultimos 7 dias das fichas reais
+ const _hoje = new Date();
+ const _labels7 = [], _dados7 = [];
+ for (let i = 6; i >= 0; i--){
+   const d = new Date(_hoje); d.setDate(d.getDate() - i);
+   const dd = String(d.getDate()).padStart(2,'0');
+   const mm = String(d.getMonth()+1).padStart(2,'0');
+   _labels7.push(dd+'/'+mm);
+   const alvo = d.toISOString().slice(0,10);
+   const c = (window.D?.analyses||[]).filter(a => (a.dt||'').startsWith(alvo)).length;
+   _dados7.push(c);
+ }
  const chV = new Chart(cvEl, {
  type:'line',
- data:{ labels:['12/05','13/05','14/05','15/05','16/05','17/05','18/05'],
- datasets:[{ label:'Fichas', data:[8,12,6,15,10,11,7],
- borderColor:'#4F46E5', backgroundColor:'transparent', fill:true,
- _gc:[79,70,229,0.35],
- tension:.42, pointBackgroundColor:'#4F46E5', pointBorderColor:'#fff',
+ data:{ labels: _labels7,
+ datasets:[{ label:'Fichas', data: _dados7,
+ borderColor:'#15746E', backgroundColor:'transparent', fill:true,
+ _gc:[21,116,110,0.35],
+ tension:.42, pointBackgroundColor:'#15746E', pointBorderColor:'#fff',
  pointBorderWidth:2, pointRadius:5, pointHoverRadius:7, borderWidth:2.5 }]},
  options:{ responsive:true, maintainAspectRatio:false, animation:{duration:700,easing:'easeInOutQuart'}, plugins:{legend:{display:false},tooltip:tip}, scales:scaleBase },
  plugins:[GRAD_PLUGIN]
