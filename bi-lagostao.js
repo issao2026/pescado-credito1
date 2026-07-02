@@ -233,7 +233,7 @@
       breadcrumb += '</div>';
     }
 
-    return breadcrumb + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div style="font-size:11px;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;font-weight:700">Análise Comercial · Lagostão Pescados</div><div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:#0A3332">Business Intelligence · ${filt.length} de ${L.length} clientes</div></div><div style="display:flex;gap:8px"><button onclick="exportarCSVLagostao()" style="background:#012A2A;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer">Exportar CSV</button><button onclick="window._BI_LAG_FILTERS={vendedor:'',saida:'',risco:'',prazo:'',busca:''};render()" style="background:#fff;border:1px solid #D6DDDA;color:#5F7573;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer">Limpar filtros</button></div></div>
+    return breadcrumb + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div style="font-size:11px;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;font-weight:700">Análise Comercial · Lagostão Pescados</div><div style="font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;color:#0A3332">Business Intelligence · ${filt.length} de ${L.length} clientes</div></div><div style="display:flex;gap:8px"><button onclick="abrirImportarPlanilha()" style="background:#15746E;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer">Importar planilha</button><button onclick="exportarCSVLagostao()" style="background:#012A2A;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer">Exportar CSV</button><button onclick="window._BI_LAG_FILTERS={vendedor:'',saida:'',risco:'',prazo:'',busca:''};render()" style="background:#fff;border:1px solid #D6DDDA;color:#5F7573;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer">Limpar filtros</button></div></div>
 
 <div style="background:#fff;border:1px solid #E4EAF4;border-radius:12px;padding:14px 16px;margin-bottom:16px"><div style="display:grid;grid-template-columns:1fr 200px 200px 150px;gap:10px;align-items:end"><div><label style="font-size:10px;color:#9896A8;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Buscar cliente ou CNPJ</label><input value="${F.busca}" oninput="window._BI_LAG_FILTERS.busca=this.value;clearTimeout(window._bit);window._bit=setTimeout(render,250)" placeholder="Nome ou CNPJ" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;background:#F5F7F6"></div><div><label style="font-size:10px;color:#9896A8;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Vendedor</label><select onchange="window._BI_LAG_FILTERS.vendedor=this.value;render()" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;background:#F5F7F6"><option value="">Todos</option>${vO.map(v=>`<option value="${v}" ${F.vendedor===v?'selected':''}>${v}</option>`).join('')}</select></div><div><label style="font-size:10px;color:#9896A8;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Rota de saída</label><select onchange="window._BI_LAG_FILTERS.saida=this.value;render()" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;background:#F5F7F6"><option value="">Todas</option><option value="Lagostao" ${F.saida==='Lagostao'?'selected':''}>Lagostão</option><option value="Global" ${F.saida==='Global'?'selected':''}>Global</option><option value="JP" ${F.saida==='JP'?'selected':''}>JP</option></select></div><div><label style="font-size:10px;color:#9896A8;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">Prazo</label><input value="${F.prazo}" oninput="window._BI_LAG_FILTERS.prazo=this.value;clearTimeout(window._bit2);window._bit2=setTimeout(render,250)" placeholder="Ex: 14" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;background:#F5F7F6"></div></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:#9896A8;text-transform:uppercase;font-weight:700;align-self:center">Faixa de risco:</span><span onclick="window._BI_LAG_FILTERS.risco='';render()" style="${chipStyle(!F.risco)}">Todos</span><span onclick="window._BI_LAG_FILTERS.risco='baixo';render()" style="${chipStyle(F.risco==='baixo')}">Baixo > 700</span><span onclick="window._BI_LAG_FILTERS.risco='moderado';render()" style="${chipStyle(F.risco==='moderado')}">Moderado 601-700</span><span onclick="window._BI_LAG_FILTERS.risco='elevado';render()" style="${chipStyle(F.risco==='elevado')}">Elevado 501-600</span><span onclick="window._BI_LAG_FILTERS.risco='alto';render()" style="${chipStyle(F.risco==='alto')}">Alto < 500</span><span onclick="window._BI_LAG_FILTERS.risco='sem_score';render()" style="${chipStyle(F.risco==='sem_score')}">Sem score</span></div></div>
 
@@ -267,17 +267,17 @@
     const vd = {}; filt.forEach(r => { vd[r.vendedor] = (vd[r.vendedor]||0)+1; });
     const tV = Object.entries(vd).sort((a,b)=>b[1]-a[1]).slice(0,10);
     const e3 = document.getElementById('ch-vendedores');
-    if (e3) new Chart(e3, { type:'bar', data:{ labels:tV.map(v=>v[0]), datasets:[{ label:'Fichas', data:tV.map(v=>v[1]), backgroundColor:CORES.verde, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ var vendedorClicado = tV[el[0].index][0]; var jaFiltrando = window._BI_LAG_FILTERS.vendedor === vendedorClicado; if (jaFiltrando){ verClientesDoVendedor(vendedorClicado); } else { filtrarPorVendedor(vendedorClicado); }} }, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
+    if (e3) new Chart(e3, { type:'bar', data:{ labels:tV.map(v=>v[0]), datasets:[{ label:'Fichas', data:tV.map(v=>v[1]), backgroundColor:CORES.verde, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ verClientesDoVendedor(tV[el[0].index][0]); } }, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
     const spv = {}; filt.forEach(r => { if (r.score>0){ if (!spv[r.vendedor]) spv[r.vendedor] = []; spv[r.vendedor].push(r.score); }});
     const smv = Object.entries(spv).map(([v,a]) => ({v, med: Math.round(a.reduce((x,y)=>x+y,0)/a.length), n: a.length})).filter(o => o.n >= 2).sort((a,b)=>b.med-a.med).slice(0,10);
     const e4 = document.getElementById('ch-score-vend');
-    if (e4) new Chart(e4, { type:'bar', data:{ labels: smv.map(o=>o.v), datasets:[{ label:'Score', data:smv.map(o=>o.med), backgroundColor: smv.map(o=>o.med>700?CORES.verdeOk:o.med>=601?CORES.amarelo:o.med>=501?CORES.laranja:CORES.vermelho), borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorVendedor(smv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
+    if (e4) new Chart(e4, { type:'bar', data:{ labels: smv.map(o=>o.v), datasets:[{ label:'Score', data:smv.map(o=>o.med), backgroundColor: smv.map(o=>o.med>700?CORES.verdeOk:o.med>=601?CORES.amarelo:o.med>=501?CORES.laranja:CORES.vermelho), borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ verClientesDoVendedor(smv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ min:0, max:1000, grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
     const tpv = {}; filt.forEach(r => { if (r.limite>0){ if (!tpv[r.vendedor]) tpv[r.vendedor] = []; tpv[r.vendedor].push(r.limite); }});
     const tmv = Object.entries(tpv).map(([v,a]) => ({v, med: Math.round(a.reduce((x,y)=>x+y,0)/a.length), n:a.length})).filter(o => o.n >= 2).sort((a,b)=>b.med-a.med).slice(0,10);
     const e5 = document.getElementById('ch-ticket-vend');
-    if (e5) new Chart(e5, { type:'bar', data:{ labels:tmv.map(o=>o.v), datasets:[{ label:'Ticket', data:tmv.map(o=>o.med), backgroundColor:CORES.verdeDark, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ filtrarPorVendedor(tmv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
+    if (e5) new Chart(e5, { type:'bar', data:{ labels:tmv.map(o=>o.v), datasets:[{ label:'Ticket', data:tmv.map(o=>o.med), backgroundColor:CORES.verdeDark, borderRadius:4 }]}, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(ev,el)=>{ if(el[0]){ verClientesDoVendedor(tmv[el[0].index].v); }}, plugins:{ legend:{display:false}}, scales:{ x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:10}, callback:v=>'R$ '+(v/1000).toFixed(0)+'k'}}, y:{ grid:{display:false}, ticks:{font:{size:11}}} }}});
 
     const pts = filt.filter(r=>r.score>0 && r.limite>0).map(r => ({ x:r.score, y:r.limite, cliente:r.cliente, backgroundColor:r.score>700?CORES.verdeOk:r.score>=601?CORES.amarelo:r.score>=501?CORES.laranja:CORES.vermelho }));
     const e6 = document.getElementById('ch-scatter');
@@ -329,4 +329,137 @@
     a.href = url; a.download = 'lagostao-bi-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
     setTimeout(()=>URL.revokeObjectURL(url), 1000);
   };
+
+  // v4.41: modal de importar planilha (CSV/TSV colado, upload arquivo, ou link Google Sheets)
+  window.abrirImportarPlanilha = function(){
+    var old = document.getElementById('imp-lag-modal'); if (old) old.remove();
+    var ov = document.createElement('div'); ov.id = 'imp-lag-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(1,42,42,.85);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,sans-serif';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:22px 26px;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-family:Poppins,sans-serif;font-weight:800;font-size:19px;color:#012A2A">Importar planilha Lagostao</div><div style="font-size:12px;color:#5F7573;margin-top:4px">Colar dados do Excel/Google Sheets, subir CSV/XLSX, ou colar link do Google Sheets</div></div><button onclick="document.getElementById(\'imp-lag-modal\').remove()" style="background:transparent;border:none;font-size:24px;cursor:pointer;color:#666">×</button></div>'
+      + '<div id="imp-tabs" style="display:flex;gap:4px;border-bottom:2px solid #E4EAF4;margin-bottom:14px">'
+      +   '<button class="imp-tab" data-tab="paste" style="padding:8px 14px;border:none;background:transparent;font-weight:700;font-size:12px;cursor:pointer;border-bottom:2px solid #15746E;color:#15746E;margin-bottom:-2px">Colar tabela</button>'
+      +   '<button class="imp-tab" data-tab="file" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:#5F7573">Upload CSV/XLSX</button>'
+      +   '<button class="imp-tab" data-tab="link" style="padding:8px 14px;border:none;background:transparent;font-weight:600;font-size:12px;cursor:pointer;color:#5F7573">Link Google Sheets</button>'
+      + '</div>'
+      + '<div id="imp-pane-paste"><div style="font-size:11px;color:#5F7573;margin-bottom:6px">Selecione as celulas no Excel/Sheets (Ctrl+A + Ctrl+C) e cole no campo abaixo (Ctrl+V). Primeira linha deve ter os cabecalhos.</div><textarea id="imp-paste" rows="12" placeholder="cliente,cnpj,vendedor,fundado,capital,prospeccao,score,dividas,prazo,limite,saidas,obs,data" style="width:100%;padding:10px;border:1px solid #D6DDDA;border-radius:8px;font-family:monospace;font-size:11.5px;resize:vertical"></textarea></div>'
+      + '<div id="imp-pane-file" style="display:none"><div style="border:2px dashed #D6DDDA;border-radius:10px;padding:24px;text-align:center;background:#F5F7F6"><div style="font-size:12px;color:#5F7573;margin-bottom:10px">Aceita CSV, TSV ou XLSX. Primeira linha = cabecalhos.</div><input type="file" id="imp-file" accept=".csv,.tsv,.txt,.xlsx" style="display:none"><button onclick="document.getElementById(\'imp-file\').click()" style="background:#15746E;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">Selecionar arquivo</button><div id="imp-file-info" style="font-size:11.5px;color:#5F7573;margin-top:10px">Nenhum arquivo selecionado</div></div></div>'
+      + '<div id="imp-pane-link" style="display:none"><div style="font-size:11px;color:#5F7573;margin-bottom:6px">Cole o link de compartilhamento da planilha Google Sheets. A planilha precisa ser <b>publica ("qualquer pessoa com o link pode ver")</b>.</div><input id="imp-link" type="url" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;padding:10px;border:1px solid #D6DDDA;border-radius:8px;font-size:13px;margin-bottom:8px"><div style="font-size:10.5px;color:#9896A8;margin-top:4px">Publicar em File > Share > Publish to the web > CSV</div></div>'
+      + '<div id="imp-status" style="margin-top:12px;font-size:12px;min-height:18px;color:#5F7573"></div>'
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button onclick="document.getElementById(\'imp-lag-modal\').remove()" style="background:#f3f4f6;color:#012A2A;border:1px solid #D6D2CB;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button><button id="imp-confirmar" style="background:#012A2A;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer">Importar</button></div>'
+      + '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed #D6DDDA;font-size:10.5px;color:#9896A8">Colunas esperadas (case-insensitive): <b>cliente</b>, <b>cnpj</b>, <b>vendedor</b>, fundado, capital, prospeccao, score, dividas, prazo, <b>limite</b>, saidas, obs, data. Colunas em negrito sao obrigatorias.</div>'
+      + '</div>';
+    document.body.appendChild(ov);
+
+    var modo = 'paste';
+    document.querySelectorAll('#imp-tabs .imp-tab').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        modo = btn.dataset.tab;
+        document.querySelectorAll('#imp-tabs .imp-tab').forEach(function(b){ b.style.borderBottom='2px solid transparent'; b.style.color='#5F7573'; b.style.fontWeight='600'; });
+        btn.style.borderBottom='2px solid #15746E'; btn.style.color='#15746E'; btn.style.fontWeight='700';
+        ['paste','file','link'].forEach(function(t){ var p=document.getElementById('imp-pane-'+t); if(p) p.style.display=(t===modo)?'block':'none'; });
+      });
+    });
+
+    var arquivoSelecionado = null;
+    document.getElementById('imp-file').addEventListener('change', function(e){
+      arquivoSelecionado = e.target.files && e.target.files[0];
+      if (arquivoSelecionado){
+        document.getElementById('imp-file-info').innerHTML = '<b style="color:#059669">'+arquivoSelecionado.name+'</b> ('+Math.round(arquivoSelecionado.size/1024)+' KB)';
+      }
+    });
+
+    document.getElementById('imp-confirmar').addEventListener('click', async function(){
+      var st = document.getElementById('imp-status');
+      try {
+        var texto = '';
+        if (modo === 'paste'){
+          texto = document.getElementById('imp-paste').value.trim();
+          if (texto.length < 20){ st.style.color='#DC2626'; st.textContent='Cole a tabela primeiro (Ctrl+V)'; return; }
+        } else if (modo === 'file'){
+          if (!arquivoSelecionado){ st.style.color='#DC2626'; st.textContent='Selecione um arquivo primeiro'; return; }
+          st.style.color='#5F7573'; st.textContent='Lendo arquivo...';
+          if (/\.xlsx?$/i.test(arquivoSelecionado.name)){
+            st.style.color='#DC2626'; st.textContent='XLSX ainda nao suportado. Salve como CSV e tente de novo.'; return;
+          }
+          texto = await arquivoSelecionado.text();
+        } else if (modo === 'link'){
+          var link = document.getElementById('imp-link').value.trim();
+          if (!link){ st.style.color='#DC2626'; st.textContent='Cole o link primeiro'; return; }
+          var m = link.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+          if (!m){ st.style.color='#DC2626'; st.textContent='Link invalido. Cole o link da planilha Google Sheets.'; return; }
+          var id = m[1];
+          var gid = (link.match(/[#&]gid=([0-9]+)/) || [])[1] || '0';
+          var csvUrl = 'https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:csv&gid='+gid;
+          st.style.color='#5F7573'; st.textContent='Baixando planilha...';
+          var r = await fetch(csvUrl, { mode:'cors' }).catch(function(e){ return null; });
+          if (!r || !r.ok){ st.style.color='#DC2626'; st.textContent='Nao foi possivel baixar. Verifique que a planilha esta publica (Publish to web como CSV).'; return; }
+          texto = await r.text();
+        }
+
+        var parsed = parseTabelaImportada(texto);
+        if (!parsed.ok){ st.style.color='#DC2626'; st.textContent=parsed.erro; return; }
+        st.style.color='#059669'; st.textContent='Importadas '+parsed.linhas.length+' linhas. Atualizando dashboard...';
+        window.LAGOSTAO_DATA = parsed.linhas;
+        setTimeout(function(){
+          document.getElementById('imp-lag-modal').remove();
+          if (window.render) window.render();
+        }, 500);
+      } catch(e){
+        st.style.color='#DC2626'; st.textContent='Erro: '+e.message;
+      }
+    });
+  };
+
+  function parseTabelaImportada(texto){
+    var linhas = texto.split(/\r?\n/).filter(function(l){ return l.trim().length > 0; });
+    if (linhas.length < 2) return { ok:false, erro:'Precisa de pelo menos cabecalho + 1 linha' };
+    // detecta separador: tab, ;, ,
+    var sep = ',';
+    var l0 = linhas[0];
+    if (l0.indexOf('\t') > -1) sep = '\t';
+    else if (l0.split(';').length > l0.split(',').length) sep = ';';
+    var splitLine = function(line){
+      // basico: nao lida com aspas escapadas, mas funciona pro paste do Excel
+      return line.split(sep).map(function(c){ return c.trim().replace(/^"|"$/g,''); });
+    };
+    var cab = splitLine(l0).map(function(c){ return c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); });
+    var idx = {};
+    ['cliente','cnpj','vendedor','fundado','capital','prospeccao','score','dividas','prazo','limite','saidas','obs','data'].forEach(function(k){
+      idx[k] = cab.indexOf(k);
+      if (idx[k] === -1){
+        // aliases
+        if (k === 'cliente') idx[k] = cab.indexOf('razao social') !== -1 ? cab.indexOf('razao social') : cab.indexOf('nome');
+        if (k === 'cnpj') idx[k] = cab.indexOf('cpf/cnpj') !== -1 ? cab.indexOf('cpf/cnpj') : cab.indexOf('cpf cnpj');
+        if (k === 'saidas') idx[k] = cab.indexOf('rota') !== -1 ? cab.indexOf('rota') : cab.indexOf('rota de saida');
+      }
+    });
+    if (idx.cliente === -1 || idx.cnpj === -1 || idx.vendedor === -1){
+      return { ok:false, erro:'Cabecalhos obrigatorios nao encontrados: cliente, cnpj, vendedor' };
+    }
+    var parseNum = function(v){ if (!v) return 0; return parseFloat(String(v).replace(/[^\d,-]/g,'').replace(',','.')) || 0; };
+    var linhasParsed = [];
+    for (var i=1; i<linhas.length; i++){
+      var col = splitLine(linhas[i]);
+      var cliente = col[idx.cliente] || '';
+      if (!cliente) continue;
+      linhasParsed.push({
+        cliente: cliente,
+        cnpj: col[idx.cnpj] || '',
+        vendedor: col[idx.vendedor] || '—',
+        fundado: idx.fundado >= 0 ? col[idx.fundado] : '',
+        capital: idx.capital >= 0 ? parseNum(col[idx.capital]) : 0,
+        prospeccao: idx.prospeccao >= 0 ? parseNum(col[idx.prospeccao]) : 0,
+        score: idx.score >= 0 ? parseInt(parseNum(col[idx.score]),10) : 0,
+        dividas: idx.dividas >= 0 ? parseNum(col[idx.dividas]) : 0,
+        prazo: idx.prazo >= 0 ? col[idx.prazo] : '',
+        limite: idx.limite >= 0 ? parseNum(col[idx.limite]) : 0,
+        saidas: idx.saidas >= 0 ? (col[idx.saidas]||'').split(/[|+,]/).map(function(s){return s.trim();}).filter(Boolean) : [],
+        obs: idx.obs >= 0 ? col[idx.obs] : '',
+        data: idx.data >= 0 ? col[idx.data] : ''
+      });
+    }
+    if (linhasParsed.length === 0) return { ok:false, erro:'Nenhuma linha valida encontrada' };
+    return { ok:true, linhas: linhasParsed };
+  }
 })();
