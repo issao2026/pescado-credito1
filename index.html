@@ -6,6 +6,7 @@
 <title>Crédito — Pescado</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="/lagostao-data.js"></script>
+<script src="/bi-lagostao.js?v=4.34"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -985,7 +986,7 @@ function nav(p) {
  window.scrollTo(0,0);
 }
 function render() {
- const fns = {dashboard:pgDash,fila:pgFila,nova:pgNova,politica:pgPolitica,relatorios:pgRelatorios,laudo:pgLaudo,bi_lagostao:pgBILagostao};
+ const fns = {dashboard:pgDash,fila:pgFila,nova:pgNova,politica:pgPolitica,relatorios:pgRelatorios,laudo:pgLaudo,bi_lagostao:(window.pgBILagostao || _pgBILagostaoOld)};
  document.getElementById('pg').innerHTML = (fns[D.page]||(() => ''))();
  afterRender();
  // v4.24: sync contador da fila com dado real
@@ -1001,6 +1002,7 @@ function render() {
 function afterRender() {
  if(D.page==='dashboard') buildCharts();
  if(D.page==='relatorios') buildRelCharts();
+ if(D.page==='bi_lagostao' && window.renderBIGraficos) setTimeout(window.renderBIGraficos, 60);
  if(D.page==='nova' && _novaStep===1) {
  if(!window.PESCADO_SLA?.inicio) iniciaSLA(); else renderTimerRegressivo();
  } else if(D.page!=='nova') _stopTimer();
@@ -1177,15 +1179,13 @@ function pgDash() {
  </div>
 </div>
 
-${renderPainelLagostao()}
-
 </div>` + _wrapEnd;
 }
 
 // v4.26: Painel KPIs Lagostao (base historica)
 // v4.29: aba dedicada BI Lagostao com filtros interativos
 window._BI_LAG_FILTERS = { vendedor:'', saida:'', risco:'', prazo:'', busca:'' };
-function pgBILagostao(){
+function _pgBILagostaoOld(){
   const L = (window.LAGOSTAO_DATA || []);
   const F = window._BI_LAG_FILTERS;
   // Aplica filtros

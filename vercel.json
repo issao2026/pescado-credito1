@@ -10,8 +10,7 @@
   },
   "rewrites": [
     { "source": "/api/entrada-rapida", "destination": "/api/sbtest" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "headers": [
     {
