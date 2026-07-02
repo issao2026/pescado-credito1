@@ -864,27 +864,7 @@ window.openAnalise = window.openAnalise || function(id) {
 const D = {
  page: 'dashboard',
  filter: 'todos',
- analyses: [
- { id:1, nome:'Distribuidora Alimentos Norte Ltda', cnpj:'12.345.678/0001-90', tipo:'PJ', vendedor:'Carlos Menezes', valor:85000, prazo:'30/60/90 dias', est:18000, status:'Análise IA gerada', score:720, risco:'Moderado', docSt:'Completo', serasa:'Relatório anexado', cenprot:'Revisado pela IA', recIA:'Aprovado com limite reduzido', resp:'Ana Lima', final:'—', dt:'2026-05-18', prot:0, rest:0,
- docs:[{n:'Contrato_Social.pdf',c:'Contrato social',cf:94,st:'lido',ic:''},{n:'CNPJ_card.pdf',c:'Cartão CNPJ',cf:98,st:'lido',ic:''},{n:'Serasa_relatorio.pdf',c:'Relatório Serasa',cf:96,st:'lido',ic:''},{n:'Comprovante_end.jpg',c:'Comprovante de endereço',cf:88,st:'lido',ic:''},{n:'Ref_comercial_1.pdf',c:'Referências comerciais',cf:82,st:'revisar',ic:''}],
- alerts:['Referência comercial necessita revisão manual'] },
- { id:2, nome:'João Paulo Ferreira Santos', cnpj:'987.654.321-00', tipo:'PF', vendedor:'Mariana Costa', valor:12000, prazo:'30 dias', est:4000, status:'Aguardando documentos', score:null, risco:'Pendente', docSt:'Incompleto', serasa:'Não consultado', cenprot:'Não consultado', recIA:'Pendente por documentação incompleta', resp:'Bruno Alves', final:'—', dt:'2026-05-17', prot:null, rest:null,
- docs:[{n:'RG_foto.jpg',c:'Documento de sócio',cf:85,st:'lido',ic:''},{n:'comprovante_renda.pdf',c:'Comprovante financeiro',cf:91,st:'lido',ic:''}],
- alerts:['Comprovante de residência ausente','Consulta Serasa não realizada','Consulta CENPROT não realizada'] },
- { id:3, nome:'Frigorífico Bom Gosto S/A', cnpj:'98.765.432/0001-11', tipo:'PJ', vendedor:'Ricardo Fonseca', valor:250000, prazo:'60/90 dias', est:55000, status:'Aguardando aprovação gerencial', score:580, risco:'Elevado', docSt:'Completo', serasa:'Revisado pela IA', cenprot:'Revisado pela IA', recIA:'Análise gerencial necessária', resp:'Ana Lima', final:'—', dt:'2026-05-16', prot:2, rest:1,
- docs:[{n:'Contrato_Social_Frigo.pdf',c:'Contrato social',cf:97,st:'lido',ic:''},{n:'CNPJ_Frigo.pdf',c:'Cartão CNPJ',cf:99,st:'lido',ic:''},{n:'Serasa_Frigo.pdf',c:'Relatório Serasa',cf:95,st:'lido',ic:''},{n:'CENPROT_Frigo.pdf',c:'Relatório CENPROT/cartório/protestos',cf:93,st:'lido',ic:'️'},{n:'Alteracao.pdf',c:'Alteração contratual',cf:90,st:'lido',ic:''},{n:'End_empresa.jpg',c:'Comprovante de endereço',cf:87,st:'lido',ic:''},{n:'WhatsApp.txt',c:'Conversa WhatsApp',cf:70,st:'revisar',ic:''}],
- alerts:['Score 580 — risco elevado','2 protestos ativos encontrados','1 restrição financeira no Serasa','Valor solicitado elevado para o perfil — requer aprovação gerencial'] },
- { id:4, nome:'Comercial Três Irmãos ME', cnpj:'55.444.333/0001-22', tipo:'PJ', vendedor:'Carlos Menezes', valor:35000, prazo:'30 dias', est:9000, status:'Aprovado', score:810, risco:'Baixo', docSt:'Completo', serasa:'Revisado pela IA', cenprot:'Revisado pela IA', recIA:'Aprovado', resp:'Ana Lima', final:'Aprovado', dt:'2026-05-15', prot:0, rest:0,
- docs:[{n:'CS.pdf',c:'Contrato social',cf:97,st:'lido',ic:''},{n:'CNPJ.pdf',c:'Cartão CNPJ',cf:99,st:'lido',ic:''},{n:'Serasa.pdf',c:'Relatório Serasa',cf:96,st:'lido',ic:''},{n:'CENPROT.pdf',c:'Relatório CENPROT/cartório/protestos',cf:94,st:'lido',ic:'️'},{n:'Ref1.pdf',c:'Referências comerciais',cf:90,st:'lido',ic:''},{n:'Ref2.pdf',c:'Referências comerciais',cf:88,st:'lido',ic:''},{n:'Ref3.pdf',c:'Referências comerciais',cf:91,st:'lido',ic:''}],
- alerts:[] },
- { id:5, nome:'Padaria Sabor & Arte', cnpj:'11.222.333/0001-44', tipo:'PJ', vendedor:'Mariana Costa', valor:8000, prazo:'30 dias', est:2500, status:'Somente à vista', score:420, risco:'Alto', docSt:'Completo', serasa:'Revisado pela IA', cenprot:'Revisado pela IA', recIA:'Somente à vista', resp:'Bruno Alves', final:'Somente à vista', dt:'2026-05-14', prot:3, rest:2,
- docs:[{n:'CNPJ_Padaria.pdf',c:'Cartão CNPJ',cf:98,st:'lido',ic:''},{n:'Serasa_Padaria.pdf',c:'Relatório Serasa',cf:95,st:'lido',ic:''},{n:'CENPROT_Padaria.pdf',c:'Relatório CENPROT/cartório/protestos',cf:92,st:'lido',ic:'️'}],
- alerts:['Score 420 — alto risco','3 protestos ativos','2 restrições financeiras','Crédito não recomendado'] },
- { id:6, nome:'Supermercado Família Ltda', cnpj:'66.777.888/0001-55', tipo:'PJ', vendedor:'Ricardo Fonseca', valor:120000, prazo:'30/60 dias', est:28000, status:'Pronto para análise IA', score:665, risco:'Moderado', docSt:'Completo', serasa:'Revisado pela IA', cenprot:'Consulta em andamento', recIA:'Aprovado com limite reduzido', resp:'—', final:'—', dt:'2026-05-18', prot:0, rest:0,
- docs:[{n:'CS_Super.pdf',c:'Contrato social',cf:96,st:'lido',ic:''},{n:'CNPJ_Super.pdf',c:'Cartão CNPJ',cf:99,st:'lido',ic:''},{n:'Serasa_Super.pdf',c:'Relatório Serasa',cf:94,st:'lido',ic:''}],
- alerts:['CENPROT/cartório ainda em andamento'] },
- { id:7, nome:'Maria da Silva Gomes', cnpj:'123.456.789-01', tipo:'PF', vendedor:'Carlos Menezes', valor:5000, prazo:'30 dias', est:1500, status:'Recebido', score:null, risco:'Pendente', docSt:'Pendente', serasa:'Não consultado', cenprot:'Não consultado', recIA:'—', resp:'—', final:'—', dt:'2026-05-18', prot:null, rest:null, docs:[], alerts:['Nenhum documento recebido ainda'] },
- ],
+ analyses: [],  // v4.24: carregado via GET /api/fichas no boot (Supabase real, sem ficticios)
  policy: {
  faixas:[
  {lbl:'Acima de 700', risco:'Baixo Risco', cor:'var(--G)', acao:'Liberação de crédito com prazo padrão'},
@@ -906,6 +886,36 @@ const D = {
 // === PESCADO v4.4 - Exportar D pro escopo global ===
 // const top-level NAO cria window.D — precisa atribuir explicito
 window.D = D;
+
+// === v4.24: Carrega fichas REAIS do Supabase no boot ===
+window.carregarFichasDoBanco = async function(){
+  try {
+    const r = await fetch('/api/fichas');
+    if (!r.ok) return;
+    const arr = await r.json();
+    if (Array.isArray(arr)){
+      D.analyses = arr.map(f => {
+        return Object.assign({}, f, {
+          docs: f.docs || [],
+          alerts: f.alerts || [],
+          est: f.est || 0,
+          prot: f.prot,
+          rest: f.rest
+        });
+      });
+      console.log('[Pescado] ' + D.analyses.length + ' fichas carregadas do Supabase');
+      if (typeof render === 'function') render();
+    }
+  } catch(e){
+    console.warn('[Pescado] Falha ao carregar fichas do Supabase:', e.message);
+  }
+};
+// Dispara logo apos DOM pronto
+if (document.readyState === 'complete' || document.readyState === 'interactive'){
+  setTimeout(window.carregarFichasDoBanco, 100);
+} else {
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(window.carregarFichasDoBanco, 100); });
+}
 
 // ══════════════════════════════════════
 // HELPERS
