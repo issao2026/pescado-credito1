@@ -5543,6 +5543,13 @@ window.imprimirFichaAtual = function(){
     } else {
       h += '<div style="font-family:Inter,sans-serif;font-size:13px;color:#2E2B3A;margin-bottom:14px">Operador tem palavra final. Pode aprovar mesmo com score baixo, ou reprovar mesmo com score alto. Justificativa eh obrigatoria quando decisao diverge da recomendacao da IA.</div>';
     }
+    // v4.36 - Campos editaveis do veredito (score, limite, prazo, justificativa)
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;padding:12px 14px;background:#F5F7F6;border-radius:8px">';
+    h += '<div><label style="font-size:10px;color:#5F7573;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Score</label><input id="rep-score" type="number" min="0" max="1000" value="' + (a.score || '') + '" placeholder="0-1000" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:6px;font-size:14px;font-family:Poppins,sans-serif;font-weight:700;color:#0A3332"></div>';
+    h += '<div><label style="font-size:10px;color:#5F7573;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Limite aprovado (R$)</label><input id="rep-limite" type="text" value="' + (a.limite_aprovado || '') + '" placeholder="Ex: 10.000,00" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:6px;font-size:14px;font-family:Poppins,sans-serif;font-weight:700;color:#0A3332"></div>';
+    h += '<div><label style="font-size:10px;color:#5F7573;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Prazo</label><select id="rep-prazo" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:6px;font-size:14px;font-family:Inter,sans-serif;color:#0A3332"><option>A vista</option><option>7 dias</option><option>14 dias</option><option>21 dias</option><option>30 dias</option><option>7/14</option><option>14/21</option><option>14/21/30</option><option>7/14/21/30</option></select></div>';
+    h += '</div>';
+    h += '<div style="margin-bottom:12px"><label style="font-size:10px;color:#5F7573;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Observacoes / Justificativa</label><textarea id="rep-cond" placeholder="Registre condicoes, restricoes, motivo da decisao ou observacoes gerais..." style="width:100%;min-height:80px;padding:10px 12px;border:1px solid #D6DDDA;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;color:#0A3332;resize:vertical">' + (a.justificativa || a.observacoes || '') + '</textarea></div>';
     // === PESCADO v4.7 - Botoes marcam visualmente o escolhido ===
     function btnDec(valor, cor, label, isPrincipal){
       var sel = (decisaoFinal === valor);
@@ -5594,18 +5601,26 @@ window.imprimirFichaAtual = function(){
     if (decisao === "Reprovado" && (recIaTxt.indexOf("aprov") >= 0)) divergeIA = true;
     if (decisao === "Aprovado com restricoes" && recIaTxt.indexOf("reprov") >= 0) divergeIA = true;
 
-    var justificativa = a.justificativa || "";
-    if (divergeIA){
+    // v4.36: capturar valores dos campos editaveis
+    var jTextarea = document.getElementById('rep-cond')?.value?.trim() || '';
+    var scoreInput = document.getElementById('rep-score')?.value;
+    var limiteInput = document.getElementById('rep-limite')?.value?.trim();
+    var prazoInput = document.getElementById('rep-prazo')?.value;
+    var justificativa = jTextarea || a.justificativa || "";
+    if (divergeIA && !justificativa){
       var nova = prompt("Sua decisao (" + decisao + ") diverge da recomendacao da IA (" + (a.recIA || "--") + ").\n\nJustifique:", justificativa || "");
-      if (nova === null) return; // cancelou
+      if (nova === null) return;
       if (!nova || nova.trim().length < 5){ alert("Justificativa precisa ter pelo menos 5 caracteres."); return; }
       justificativa = nova.trim();
     }
 
-    // Salva na ficha (memoria local, mock - quando integrar Supabase isso vira PUT /api/fichas/:id)
+    // Salva na ficha (memoria local + Supabase)
     a.final = decisao;
     a.decisao_final = decisao;
     a.justificativa = justificativa;
+    if (scoreInput){ a.score = parseInt(scoreInput,10) || a.score; }
+    if (limiteInput){ a.limite_aprovado = limiteInput; }
+    if (prazoInput){ a.prazo_aprovado = prazoInput; }
     a.decisao_user = (window.PESCADO_USER && window.PESCADO_USER.nome) || "Issao Yokoi";
     a.decisao_dt = new Date().toISOString();
 
