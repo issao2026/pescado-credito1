@@ -45,7 +45,8 @@ a { text-decoration:none; color:inherit; }
 
 /* ── LAYOUT ─────────────────────────────────── */
 #wrap { display:flex; min-height:100vh; }
-#sb { width:220px; min-width:220px; background:linear-gradient(180deg, #0A3332 0%, #15746E 100%); display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; border-radius:0 20px 20px 0; box-shadow:4px 0 24px rgba(10,51,50,.24); }
+/* v4.39: cor unica RGB(0,48,48) — sem gradient para nao criar diferenca visual */
+#sb { width:220px; min-width:220px; background:#003030; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:200; border-radius:0 20px 20px 0; box-shadow:4px 0 24px rgba(0,48,48,.24); }
 #main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
 
 /* ── SIDEBAR ─────────────────────────────────── */
@@ -1048,7 +1049,7 @@ function pgDash() {
 
  // v4.27: quadro de avisos vira sidebar direita (max 10 cards). Guarda HTML pra injetar depois
  window._quadroAvisosHTML = aguardando.length > 0 ? `
-<div style="background:linear-gradient(180deg,#0A3332 0%,#15746E 100%);border-radius:14px;padding:18px 20px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18);position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column">
+<div style="background:#003030;border-radius:14px;padding:18px 20px;color:#fff;box-shadow:0 6px 20px rgba(10,51,50,.18);position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column">
  <div style="margin-bottom:12px">
    <div style="font-size:10.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Quadro de avisos</div>
    <div style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;margin-top:4px;line-height:1.25">Vendedor aguardando análise <span style="background:#DC2626;padding:1px 8px;border-radius:10px;font-size:11px;margin-left:4px">${aguardando.length}</span></div>
@@ -1073,7 +1074,7 @@ function pgDash() {
 <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:24px;align-items:stretch">
 
  <!-- Dark summary card -->
- <div style="background:linear-gradient(145deg,#0A3332 0%,#15746E 100%);border-radius:var(--r8);padding:24px;display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
+ <div style="background:#003030;border-radius:var(--r8);padding:24px;display:flex;flex-direction:column;justify-content:space-between;min-height:140px">
  <div>
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
  <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;letter-spacing:.5px">Visão geral da carteira</span>
@@ -1409,7 +1410,7 @@ window.verFichaLagostao = function(idx, cnpj){
   ov.id = 'ficha-lg-modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,51,50,.85);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;padding:20px';
   ov.innerHTML = `<div style="background:#fff;border-radius:14px;padding:0;max-width:640px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">
-    <div style="background:linear-gradient(135deg,#0A3332,#15746E);padding:22px 26px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+    <div style="background:#003030;padding:22px 26px;color:#fff;display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Ficha histórica</div>
         <div style="font-family:Poppins,sans-serif;font-size:20px;font-weight:700;margin-top:4px">${r.cliente || '—'}</div>
