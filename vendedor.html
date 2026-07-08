@@ -7,7 +7,7 @@
 <title>Lagostão - Análise de Crédito (Vendedor)</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root { --dark:#0A3332; --acc:#15746E; --bg:#F5F7F6; --txt:#0A3332; --mu:#5F7573; --bdr:#D6DDDA; --err:#DC2626; --ok:#059669; }
+:root { --dark:#012A2A; --acc:#15746E; --bg:#F5F7F6; --txt:#012A2A; --mu:#5F7573; --bdr:#D6DDDA; --err:#DC2626; --ok:#059669; }
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; line-height:1.5; }
 .topbar { background:var(--dark); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:12px; }
@@ -28,7 +28,8 @@ h2 { font-family:'Poppins',sans-serif; font-size:22px; font-weight:700; color:va
 .fg input, .fg select, .fg textarea { padding:10px 12px; border:1px solid var(--bdr); border-radius:8px; font-size:13.5px; font-family:'Inter',sans-serif; background:#fff; color:var(--txt); }
 .fg input:focus, .fg select:focus, .fg textarea:focus { outline:none; border-color:var(--acc); box-shadow:0 0 0 3px rgba(21,116,110,.12); }
 .fg textarea { min-height:80px; resize:vertical; }
-.upload-box { border:2px dashed var(--bdr); border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:.15s; background:#FAFCFB; }
+/* v4.42b: label vira bloco 100% (evita box tracejado mais estreito que o botao) */
+.upload-box { display:block; width:100%; border:2px dashed var(--bdr); border-radius:10px; padding:24px 20px; text-align:center; cursor:pointer; transition:.15s; background:#FAFCFB; }
 .upload-box:hover { border-color:var(--acc); background:#F0F7F6; }
 .upload-box .ic { font-size:22px; color:var(--acc); margin-bottom:6px; }
 .upload-box .lbl { font-size:13px; color:var(--txt); font-weight:600; }
