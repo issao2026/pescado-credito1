@@ -1725,6 +1725,110 @@ function buildCharts() {
 }
 
 // ══════════════════════════════════════
+// v4.42 — AUDITOR DE FICHA INCOMPLETA
+// ══════════════════════════════════════
+// Funcao pura, sem IA, sem endpoint. Nao decide, so aponta pendencias.
+// Retorna { nivel: 'ok'|'atencao'|'critico', pendencias:[], resumo:'string' }
+// Falha silenciosa: em caso de erro retorna ok e loga no console.
+window.auditarFichaIncompleta = function(ficha){
+  try {
+    if (!ficha || typeof ficha !== 'object') return { nivel:'ok', pendencias:[], resumo:'' };
+    var a = ficha;
+    var d = a.dados || {};
+    var pend = [];
+    function add(sev, texto){ pend.push({ sev: sev, texto: texto }); }
+
+    // Normalizacao
+    var cnpj = String(a.cnpj || a.cpf_cnpj || '').replace(/\D/g,'');
+    var valor = Number(a.valor || 0);
+    var serasa = String(a.serasa || '').toLowerCase();
+    var cenprot = String(a.cenprot || '').toLowerCase();
+    var final = String(a.final || a.decisao_final || '').trim();
+    var temDecisao = final && final !== '—' && final !== '--';
+    var isAprovado = temDecisao && /aprovad/i.test(final);
+    var justif = (a.justificativa || d.justificativa || '').trim();
+    var limAprov = a.limite_aprovado || d.limite_aprovado;
+    var prazoAprov = a.prazo_aprovado || d.prazo_aprovado;
+    var emailRetorno = (d.email_retorno && d.email_retorno.corpo) ? true : false;
+
+    // Idade da ficha
+    var criadoIso = a.created_at || (a.dt ? (a.dt + 'T00:00:00') : null);
+    var agora = new Date();
+    var horasDesdeCriada = null;
+    if (criadoIso){
+      var criada = new Date(criadoIso);
+      if (!isNaN(criada.getTime())){
+        horasDesdeCriada = (agora - criada) / (1000 * 60 * 60);
+      }
+    }
+
+    // Regras (mesma ordem/rotulos combinados)
+    if (!cnpj) add('critico', 'Sem CPF/CNPJ');
+    if (!valor || valor <= 0) add('atencao', 'Sem valor pretendido');
+    if (!temDecisao){
+      if (!serasa || serasa === 'não consultado' || serasa === 'nao consultado') add('atencao', 'Em analise sem Serasa');
+      if (!cenprot || cenprot === 'não consultado' || cenprot === 'nao consultado') add('atencao', 'Em analise sem CENPROT');
+    }
+    if (temDecisao && !justif) add('critico', 'Decisao sem justificativa');
+    if (isAprovado && !limAprov) add('critico', 'Aprovado sem limite aprovado');
+    if (isAprovado && !prazoAprov) add('critico', 'Aprovado sem prazo aprovado');
+    if (temDecisao && !emailRetorno) add('atencao', 'Decisao sem email de retorno enviado');
+    if (!temDecisao && horasDesdeCriada !== null && horasDesdeCriada > 24) add('critico', 'Ficha ha mais de 24h sem decisao');
+
+    // SLA operacional (>10min sem decisao — se timer estiver disponivel)
+    try {
+      var sla = window.PESCADO_SLA && window.PESCADO_SLA.tempoTotalSegundos;
+      if (!temDecisao && typeof sla === 'number' && sla > 600) add('atencao', 'SLA acima de 10 minutos sem decisao');
+    } catch(_){}
+
+    // Nivel resultante
+    var nivel = 'ok';
+    if (pend.some(function(p){ return p.sev === 'critico'; })) nivel = 'critico';
+    else if (pend.length) nivel = 'atencao';
+
+    var resumo = nivel === 'ok'
+      ? 'Ficha completa'
+      : pend.length + ' pendencia' + (pend.length>1?'s':'') + ' · ' + (nivel === 'critico' ? 'critico' : 'atencao');
+
+    return { nivel: nivel, pendencias: pend, resumo: resumo };
+  } catch(e){
+    if (window.console && console.warn) console.warn('[auditarFichaIncompleta] erro silenciado:', e && e.message);
+    return { nivel:'ok', pendencias:[], resumo:'' };
+  }
+};
+
+// Helper: badge visual (pequeno, cabe na linha da fila)
+window.auditBadgeHTML = function(ficha){
+  try {
+    var au = window.auditarFichaIncompleta(ficha);
+    if (au.nivel === 'ok') return '';
+    var bg = au.nivel === 'critico' ? '#DC2626' : '#D97706';
+    var titulo = au.pendencias.map(function(p){ return '- ' + p.texto; }).join('\n');
+    return '<span title="' + titulo.replace(/"/g,'&quot;') + '" style="display:inline-block;margin-left:6px;background:' + bg + ';color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:8px;letter-spacing:.3px;text-transform:uppercase;vertical-align:middle">' + (au.nivel==='critico'?'!':'!') + ' ' + au.pendencias.length + '</span>';
+  } catch(e){ return ''; }
+};
+
+// Helper: bloco de pendencias no modal da ficha (usa no renderFichaCompleta)
+window.auditBlocoHTML = function(ficha){
+  try {
+    var au = window.auditarFichaIncompleta(ficha);
+    if (au.nivel === 'ok') return '';
+    var cor = au.nivel === 'critico' ? '#DC2626' : '#D97706';
+    var bgFundo = au.nivel === 'critico' ? '#FEE2E2' : '#FEF3C7';
+    var titulo = au.nivel === 'critico' ? 'Pendencias criticas' : 'Pendencias de atencao';
+    var itens = au.pendencias.map(function(p){
+      var ic = p.sev === 'critico' ? '●' : '○';
+      var c  = p.sev === 'critico' ? '#DC2626' : '#D97706';
+      return '<li style="padding:4px 0;font-size:12.5px;color:#0A3332"><span style="color:' + c + ';font-weight:900;margin-right:6px">' + ic + '</span>' + p.texto + '</li>';
+    }).join('');
+    return '<div style="background:' + bgFundo + ';border:1px solid ' + cor + '55;border-left:4px solid ' + cor + ';border-radius:8px;padding:12px 14px;margin-bottom:14px">'
+         +   '<div style="font-family:Poppins,sans-serif;font-size:12px;font-weight:700;color:' + cor + ';text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Auditor · ' + titulo + '</div>'
+         +   '<ul style="list-style:none;padding:0;margin:0">' + itens + '</ul>'
+         + '</div>';
+  } catch(e){ return ''; }
+};
+
+// ══════════════════════════════════════
 // FILA OPERACIONAL
 // ══════════════════════════════════════
 function pgFila() {
@@ -1744,7 +1848,7 @@ function pgFila() {
  ${filtered.length===0?`<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--txt3);font-size:12.5px">${isArq?'Nenhuma ficha arquivada':'Nenhuma ficha encontrada'}</td></tr>`:''}
  ${filtered.map(a=>`<tr class="${a.arquivado?'arq-row':riskCls(a.risco)+'-row'}" onclick="openAnalise(${a.id})" title="Abrir análise de ${a.nome}" style="${a.arquivado?'opacity:.55':''}">
  <td><div style="font-size:11.5px;font-weight:600">${dt(a.dt)}</div><div style="font-size:10.5px;color:var(--txt3)">${a.tipo} · ${a.vendedor}</div></td>
- <td><div class="td-main">${a.nome}${a.arquivado?'&nbsp;<span style="font-size:9px;background:var(--surf);color:var(--txt3);border-radius:3px;padding:1px 5px;font-weight:700">ARQUIVADA</span>':''}</div></td>
+ <td><div class="td-main">${a.nome}${a.arquivado?'&nbsp;<span style="font-size:9px;background:var(--surf);color:var(--txt3);border-radius:3px;padding:1px 5px;font-weight:700">ARQUIVADA</span>':''}${(window.auditBadgeHTML && !a.arquivado) ? window.auditBadgeHTML(a) : ''}</div></td>
  <td style="font-size:11.5px;color:var(--txt2);font-family:monospace">${a.cnpj}</td>
  <td style="font-weight:700;font-size:13px">${R$(a.valor)}</td>
  <td>${scoreChip(a.score,a.risco)}</td>
@@ -5607,6 +5711,8 @@ window.imprimirFichaAtual = function(){
     const decisaoFinal = a.final && a.final !== "--" && a.final !== "—" ? a.final : null;
 
     let h = "";
+    // v4.42: bloco do Auditor de Ficha Incompleta (falha silenciosa)
+    try { if (window.auditBlocoHTML) h += window.auditBlocoHTML(a); } catch(_) {}
     // ============ LAYOUT 2 COLUNAS: dados esquerda, score direita ============
     h += '<div style="display:grid;grid-template-columns:1fr 280px;gap:28px;margin-bottom:24px">';
 
