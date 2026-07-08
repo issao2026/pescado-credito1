@@ -28,14 +28,13 @@ h2 { font-family:'Poppins',sans-serif; font-size:22px; font-weight:700; color:va
 .fg input, .fg select, .fg textarea { padding:10px 12px; border:1px solid var(--bdr); border-radius:8px; font-size:13.5px; font-family:'Inter',sans-serif; background:#fff; color:var(--txt); }
 .fg input:focus, .fg select:focus, .fg textarea:focus { outline:none; border-color:var(--acc); box-shadow:0 0 0 3px rgba(21,116,110,.12); }
 .fg textarea { min-height:80px; resize:vertical; }
-/* v4.42b: label vira bloco 100% (evita box tracejado mais estreito que o botao) */
-.upload-box { display:block; width:100%; border:2px dashed var(--bdr); border-radius:10px; padding:24px 20px; text-align:center; cursor:pointer; transition:.15s; background:#FAFCFB; }
-.upload-box:hover { border-color:var(--acc); background:#F0F7F6; }
-.upload-box .ic { font-size:22px; color:var(--acc); margin-bottom:6px; }
-.upload-box .lbl { font-size:13px; color:var(--txt); font-weight:600; }
-.upload-box .hint { font-size:11px; color:#5F7573 !important; margin-top:4px; text-decoration:none !important; -webkit-user-select:none; user-select:none; pointer-events:none; }
-.upload-box .hint * { color:#5F7573 !important; text-decoration:none !important; background:transparent !important; border:0 !important; }
-.upload-box .lbl { pointer-events:none; }
+/* v4.42c: box 100%, sem borda em nenhum filho, blindado contra auto-highlight/extensao */
+.upload-box { display:block; width:100%; box-sizing:border-box; border:2px dashed var(--bdr); border-radius:10px; padding:28px 20px; text-align:center; cursor:pointer; transition:.15s; background:#FAFCFB; min-height:120px; position:relative; }
+.upload-box * { border:0 !important; outline:0 !important; background:transparent !important; text-decoration:none !important; box-shadow:none !important; -webkit-text-fill-color:currentColor !important; }
+.upload-box:hover { border-color:var(--acc); background:#F0F7F6 !important; }
+.upload-box .ic { font-size:22px; color:var(--acc); margin-bottom:6px; line-height:1; }
+.upload-box .lbl { font-size:13px; color:var(--txt); font-weight:600; pointer-events:none; }
+.upload-box .hint { font-size:11px; color:#5F7573 !important; margin-top:4px; -webkit-user-select:none; user-select:none; pointer-events:none; }
 a[href^="mailto"], a[href^="tel"], a[href^="http"] { color:inherit !important; text-decoration:none !important; background:transparent !important; }
 * { -webkit-tap-highlight-color:transparent; }
 .file-list { margin-top:10px; }
