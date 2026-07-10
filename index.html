@@ -6952,13 +6952,21 @@ window.gerarEmailRetorno = function(tipo){
     else if (s >= 501) perfil = "satisfatório";
     else perfil = "abaixo do parametro";
 
+    // v4.43f: buscar parecer manual (ChatGPT / escrita a mao) pra incluir no email
+    var parecerManual = (a && (a.parecer_manual || a.resumo_executivo)) ||
+                        (a && a.dados && (a.dados.parecer_manual || a.dados.resumo_executivo)) ||
+                        (window.PESCADO_ANALISE_FINAL && window.PESCADO_ANALISE_FINAL.resumo_executivo) ||
+                        document.getElementById('par-texto')?.value?.trim() || "";
+    parecerManual = (parecerManual || "").trim();
+    var blocoParecer = parecerManual ? ("\n\nParecer da análise:\n" + parecerManual + "\n") : "";
+
     var corpo = "", assunto = "";
     if (tipo === "aprovado") {
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas.\n\nDessa forma, aprovamos as seguintes condições comerciais:\n\nLimite de crédito: " + (limite || "R$ ______") + "\nPrazo de pagamento: " + (prazo || "14 dias") + "\n\nAs condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas." + blocoParecer + "\n\nDessa forma, aprovamos as seguintes condições comerciais:\n\nLimite de crédito: " + (limite || "R$ ______") + "\nPrazo de pagamento: " + (prazo || "14 dias") + "\n\nAs condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     } else {
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado,\n\nApós análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito.\n\nDessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\nContudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado,\n\nApós análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito." + blocoParecer + "\n\nDessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\nContudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     }
 
     var old = document.getElementById("email-modal"); if (old) old.remove();
@@ -6977,8 +6985,9 @@ window.gerarEmailRetorno = function(tipo){
       + (nomeVendedor ? '<div style="font-size:11px;color:#5F7573;margin-top:-6px;margin-bottom:10px">Vendedor: ' + nomeVendedor + '</div>' : '')
       + '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Assunto</label>'
       + '<input id="em-assunto" value="' + assunto.replace(/"/g,"&quot;") + '" style="width:100%;padding:8px 10px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;margin-bottom:12px;font-family:Inter,sans-serif;box-sizing:border-box">'
-      + '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Corpo</label>'
-      + '<textarea id="em-corpo" style="width:100%;min-height:280px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>'
+      + '<label style="display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Corpo <span style="color:#B45309;text-transform:none;letter-spacing:0;font-weight:600">(revise antes de enviar)</span></label>'
+      + (parecerManual ? '<div style="background:#FEF3C7;border-left:3px solid #B45309;padding:8px 12px;border-radius:4px;font-size:12px;color:#92400E;margin-bottom:6px"><b>Parecer incluido no corpo abaixo.</b> Voce pode editar/apagar direto no texto antes de enviar.</div>' : '')
+      + '<textarea id="em-corpo" style="width:100%;min-height:320px;padding:10px 12px;border:1px solid #D6D2CB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;line-height:1.5;box-sizing:border-box">' + corpo + '</textarea>'
       + '<div id="em-status" style="margin-top:10px;font-size:12px;color:#5F7573;min-height:18px"></div>'
       + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
       +   '<button onclick="salvarEnviarEmail()" style="flex:1;min-width:180px;background:#15746E;color:#fff;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer">Salvar + Enviar (mailto)</button>'
