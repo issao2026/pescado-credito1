@@ -3916,6 +3916,8 @@ window.atualizarScoreSerasa = function(valor){
     a.serasa = 'Score ' + sc;
     // Atualiza risco automaticamente
     a.risco = sc > 700 ? 'Baixo' : sc >= 601 ? 'Moderado' : sc >= 501 ? 'Elevado' : 'Alto';
+    // v4.43k: sincroniza com hidden rep-score
+    var hs = document.getElementById('rep-score'); if (hs) hs.value = sc;
     if (typeof toast === 'function') toast('Score Serasa: ' + sc + ' (' + a.risco + ')');
     // Persiste no Supabase
     var putId = a._dbId || a.id;
@@ -6172,9 +6174,10 @@ window.imprimirFichaAtual = function(){
     } else {
       h += '<div style="font-family:Inter,sans-serif;font-size:13px;color:#2E2B3A;margin-bottom:14px">Operador tem palavra final. Pode aprovar mesmo com score baixo, ou reprovar mesmo com score alto. Justificativa eh obrigatoria quando decisao diverge da recomendacao da IA.</div>';
     }
-    // v4.36 - Campos editaveis do veredito (score, limite, prazo, justificativa)
-    h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;padding:12px 14px;background:#F5F7F6;border-radius:8px">';
-    h += '<div><label style="font-size:10px;color:#5F7573;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Score</label><input id="rep-score" type="number" min="0" max="1000" value="' + (a.score || '') + '" placeholder="0-1000" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:6px;font-size:14px;font-family:Poppins,sans-serif;font-weight:700;color:#0A3332"></div>';
+    // v4.36 - Campos editaveis do veredito (limite, prazo, justificativa)
+    // v4.43k: score fica so no card SERASA (evitar duplicidade). Hidden mantido pra compatibilidade.
+    h += '<input type="hidden" id="rep-score" value="' + (a.score || '') + '">';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;padding:12px 14px;background:#F5F7F6;border-radius:8px">';
     h += '<div><label style="font-size:10px;color:#5F7573;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:4px">Limite aprovado (R$)</label><input id="rep-limite" type="text" value="' + (a.limite_aprovado || '') + '" placeholder="Ex: 10.000,00" style="width:100%;padding:8px 10px;border:1px solid #D6DDDA;border-radius:6px;font-size:14px;font-family:Poppins,sans-serif;font-weight:700;color:#0A3332"></div>';
     // v4.37: pre-seleciona prazo salvo
     var _prazoSalvo = a.prazo_aprovado || '';
