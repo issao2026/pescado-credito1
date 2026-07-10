@@ -665,7 +665,8 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
 <!-- SIDEBAR -->
 <div id="sb">
  <div class="sb-top">
- <div class="sb-brand">
+ <!-- v4.42e: clicar no logo/nome volta pra pagina inicial (Dashboard) -->
+ <div class="sb-brand" onclick="nav('dashboard')" style="cursor:pointer" title="Ir para o Dashboard">
  <img src="/logo-lagostao.png" alt="Lagostao" class="sb-mark">
  <div>
  <div class="sb-name">Crédito</div>
