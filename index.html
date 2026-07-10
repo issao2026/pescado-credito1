@@ -7106,6 +7106,16 @@ window.gerarEmailRetorno = function(tipo){
     var score = document.getElementById("rep-score")?.value || (a && a.score) || "";
     var limite = document.getElementById("rep-limite")?.value || (a && a.limite_aprovado) || (a && a.valor) || "";
     var prazo = document.getElementById("rep-prazo")?.value || (a && a.prazo_aprovado) || (a && a.prazo) || "14 dias";
+    // v4.43o: formata limite pra R$ 5.000,00 (aceita "5000", "5.000", "5.000,00", 5000)
+    (function(){
+      var raw = String(limite || "").replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');
+      var n = parseFloat(raw);
+      if (!isNaN(n) && n > 0){
+        limite = "R$ " + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else {
+        limite = "R$ ______";
+      }
+    })();
     var emailVendedor = (a && a.dados && (a.dados.email_vendedor || a.dados.email_cliente)) || "";
     var nomeVendedor = (a && (a.vendedor || (a.dados && a.dados.vendedor))) || "";
     var fichaId = a && (a._dbId || a.id) || null;
