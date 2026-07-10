@@ -806,7 +806,8 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <div class="mo-sub" id="mo-sub">—</div>
  </div>
  <button class="btn btn-s btn-sm" style="background:#0A3332;color:#fff;border-color:#0A3332" onclick="pescadoAssistenteAbrir()">Assistente IA</button>
- <button class="btn btn-ghost btn-sm" onclick="closeMo('mo-analise')"> Fechar</button>
+ <!-- v4.43g: Fechar com ID + handler robusto, alem de ESC global -->
+ <button type="button" id="mo-analise-close" class="btn btn-ghost btn-sm" onclick="window.fecharModalAnalise && window.fecharModalAnalise();event.stopPropagation();return false;" style="border:1.5px solid #012A2A;color:#012A2A;font-weight:700;padding:6px 14px;cursor:pointer">Fechar</button>
  </div>
  <div class="mo-body" id="mo-body"></div>
  <div class="mo-ft no-print" style="justify-content:space-between">
@@ -2997,6 +2998,9 @@ async function submitAnalise() {
  docs: _ocrDocs.map(d=>({n:d.name,c:d.cat,ic:fIcon(d.name),st:'lido'})),
  alerts: _ocrDocs.flatMap(d=>d.alerts||[]),
  ocrData: _ocrDocs,
+ // v4.43g: parecer manual (ChatGPT) capturado na Etapa 3 pra ir no email de retorno depois
+ parecer_manual: (document.getElementById('par-texto')?.value||'').trim() || (window.PESCADO_ANALISE_FINAL && window.PESCADO_ANALISE_FINAL.resumo_executivo) || '',
+ resumo_executivo: (document.getElementById('par-texto')?.value||'').trim() || (window.PESCADO_ANALISE_FINAL && window.PESCADO_ANALISE_FINAL.resumo_executivo) || '',
  };
 
  toast('Salvando análise...');
@@ -3898,6 +3902,80 @@ function closeMo(id) {
  const mo = document.getElementById(id);
  if(mo) { mo.classList.remove('open'); document.body.style.overflow=''; }
 }
+
+// v4.43g: lanca score do Serasa direto no card
+window.atualizarScoreSerasa = function(valor){
+  try {
+    var sc = parseInt(valor,10);
+    if (isNaN(sc) || sc < 0 || sc > 1000){ toast('Score deve ser entre 0 e 1000.'); return; }
+    var id = window._curAnaliseId;
+    var a = (window.D && D.analyses || []).find(function(x){ return x.id === id; });
+    if (!a) return;
+    a.score = sc;
+    a.serasa = 'Score ' + sc;
+    // Atualiza risco automaticamente
+    a.risco = sc > 700 ? 'Baixo' : sc >= 601 ? 'Moderado' : sc >= 501 ? 'Elevado' : 'Alto';
+    if (typeof toast === 'function') toast('Score Serasa: ' + sc + ' (' + a.risco + ')');
+    // Persiste no Supabase
+    var putId = a._dbId || a.id;
+    fetch('/api/fichas?id=' + encodeURIComponent(putId), {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ score: sc, serasa: a.serasa, risco: a.risco })
+    }).catch(function(e){ console.warn('[scoreSerasa]', e.message); });
+  } catch(e){ console.warn('[atualizarScoreSerasa]', e.message); }
+};
+
+// v4.43g: atualiza Serasa/CENPROT via select e persiste
+window.atualizarConsulta = function(campo, valor){
+  try {
+    var id = window._curAnaliseId;
+    var a = (window.D && D.analyses || []).find(function(x){ return x.id === id; });
+    if (!a) return;
+    a[campo] = valor;
+    // Atualiza cor do select
+    var sel = document.getElementById('rep-' + campo + '-sel');
+    if (sel){
+      var cor = /Sem/i.test(valor)?'#065F46':/Com/i.test(valor)?'#991B1B':/Aguard/i.test(valor)?'#B45309':'#5F7573';
+      sel.style.color = cor;
+    }
+    if (typeof toast === 'function') toast(campo.toUpperCase() + ': ' + valor);
+    // Persiste no Supabase
+    var putId = a._dbId || a.id;
+    var body = {}; body[campo] = valor;
+    fetch('/api/fichas?id=' + encodeURIComponent(putId), {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    }).catch(function(e){ console.warn('[atualizarConsulta]', e.message); });
+  } catch(e){ console.warn('[atualizarConsulta] erro:', e.message); }
+};
+
+// v4.43g: funcao global de fechamento robusto do modal analise
+window.fecharModalAnalise = function(){
+  try { closeMo('mo-analise'); } catch(_){}
+  try {
+    var mo = document.getElementById('mo-analise');
+    if (mo){ mo.classList.remove('open'); mo.style.display=''; }
+    document.body.style.overflow = '';
+    // fecha tambem modais aninhados que possam estar por cima
+    ['edit-mo','email-modal','mo-veredito','mo-rel','conf-mo'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.classList.remove('open'); if (id==='mo-veredito'||id==='email-modal') el.remove(); }
+    });
+  } catch(e){ console.warn('[fecharModalAnalise]', e.message); }
+};
+
+// v4.43g: ESC fecha qualquer modal aberto
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' || e.keyCode === 27){
+    document.querySelectorAll('.mo.open').forEach(function(mo){
+      mo.classList.remove('open');
+    });
+    document.body.style.overflow = '';
+    var em = document.getElementById('email-modal'); if (em) em.remove();
+    var vd = document.getElementById('mo-veredito'); if (vd) vd.remove();
+  }
+});
 
 // Fechar modal ao clicar no backdrop
 document.querySelectorAll('.mo').forEach(mo => {
@@ -6010,15 +6088,30 @@ window.imprimirFichaAtual = function(){
 
     h += '</div>';  // fim grid 2 colunas
 
-    // ============ CONSULTAS Serasa + CENPROT ============
+    // ============ CONSULTAS (v4.43g: Serasa=input score, CENPROT=sim/nao) ============
+    var scoreAtual = a.score || '';
+    var cenAtual = a.cenprot || 'Não consultado';
+    // normaliza pra sim/nao
+    var cenSelVal = /sim|com|protest/i.test(cenAtual) && !/sem/i.test(cenAtual) ? 'Sim' :
+                    /nao|não|sem/i.test(cenAtual) ? 'Nao' : 'Nao consultado';
+    var corCen = cenSelVal==='Sim'?'#991B1B':cenSelVal==='Nao'?'#065F46':'#5F7573';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">';
+    // SERASA - input score
     h += '<div style="padding:14px 16px;border:1px solid #E8E5DE;border-radius:8px;background:#fff">';
-    h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px">Serasa</div>';
-    h += '<div style="font-family:Inter,sans-serif;font-size:13px;color:#191824">' + (a.serasa || "Nao consultado") + '</div>';
+    h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px">Serasa — Lancar score</div>';
+    h += '<div style="display:flex;gap:8px;align-items:center">';
+    h += '<input id="rep-serasa-score" type="number" min="0" max="1000" value="' + scoreAtual + '" placeholder="0-1000" onchange="window.atualizarScoreSerasa && window.atualizarScoreSerasa(this.value)" style="flex:1;padding:10px 12px;border:1px solid #D6DDDA;border-radius:6px;font-size:18px;font-family:Poppins,sans-serif;font-weight:800;color:#0A3332;text-align:center">';
+    h += '<div style="font-size:11px;color:#5F7573">/1000</div>';
     h += '</div>';
+    h += '<div style="font-size:10.5px;color:#5F7573;margin-top:6px">Digite o score do Serasa (Enter salva)</div>';
+    h += '</div>';
+    // CENPROT - sim/nao
     h += '<div style="padding:14px 16px;border:1px solid #E8E5DE;border-radius:8px;background:#fff">';
-    h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px">CENPROT</div>';
-    h += '<div style="font-family:Inter,sans-serif;font-size:13px;color:#191824">' + (a.cenprot || "Nao consultado") + '</div>';
+    h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px">CENPROT — Tem protesto?</div>';
+    h += '<select id="rep-cenprot-sel" onchange="window.atualizarConsulta && window.atualizarConsulta(\'cenprot\', this.value)" style="width:100%;padding:10px 12px;border:1px solid #D6DDDA;border-radius:6px;font-size:15px;font-family:Poppins,sans-serif;font-weight:800;color:' + corCen + ';background:#fff;cursor:pointer">';
+    ['Nao consultado','Sim','Nao'].forEach(function(o){ h += '<option value="' + o + '" ' + (o===cenSelVal?'selected':'') + '>' + (o==='Sim'?'SIM — tem protesto':o==='Nao'?'NAO — sem protesto':'Nao consultado') + '</option>'; });
+    h += '</select>';
+    h += '<div style="font-size:10.5px;color:#5F7573;margin-top:6px">Selecione se ha protesto ativo</div>';
     h += '</div>';
     h += '</div>';
 
