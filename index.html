@@ -3682,7 +3682,16 @@ window.decisaoDoRelatorio = function(decisao){
   else if (decisao === 'Somente a vista') a.status = 'Somente à vista';
   a.decisao_user = (window.PESCADO_USER && window.PESCADO_USER.nome) || 'Francisco Elves';
   a.decisao_dt = new Date().toISOString();
-  toast('Decisao registrada: ' + decisao);
+  toast('Decisao registrada: ' + decisao + '. Abrindo email de retorno...');
+  // v4.43m: apos decidir, dispara email de retorno automaticamente
+  setTimeout(function(){
+    try {
+      if (typeof state !== 'undefined' && state){ state.openA = a; }
+      var tipoEmail = decisao === 'Aprovado' ? 'aprovado' :
+                      /reprov/i.test(decisao) ? 'reprovado' : 'a_vista';
+      if (typeof window.gerarEmailRetorno === 'function') window.gerarEmailRetorno(tipoEmail);
+    } catch(e){ console.warn('[decisaoRel] auto-email falhou:', e.message); }
+  }, 300);
   try {
     var putId = a._dbId || a.id;
     fetch('/api/fichas?id=' + encodeURIComponent(putId), {
