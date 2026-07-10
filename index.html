@@ -4696,7 +4696,8 @@ document.querySelectorAll('.mo').forEach(mo => {
 
  const wrap = document.createElement('div');
  wrap.id = 'mo-veredito';
- wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center';
+ // v4.42d: acima do modal ficha
+ wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center';
  const restNum = (a.consultas?.serasa?.restricoes||[]).length;
  const protNum = (a.consultas?.cenprot?.protestos||[]).length;
  const scoreVal = a.consultas?.serasa?.score;
@@ -4945,11 +4946,12 @@ document.querySelectorAll('.mo').forEach(mo => {
  ${ok?'<span style="font-size:9px;padding:2px 7px;background:#D1FAE5;color:#065F46;border-radius:10px;font-weight:700">OK</span>':''}
  </div>
  <div style="flex:1">${conteudo}</div>
- <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)">
- <button class="btn btn-s" style="font-size:11px;padding:6px 10px;flex:1" onclick="colarRelatorio('${tipo}')">Digitar texto</button>
- <button class="btn btn-s" style="font-size:11px;padding:6px 10px;flex:1" onclick="uploadRelatorio('${tipo}')"> Upload PDF</button>
- ${ok?`<button class="btn btn-s" style="font-size:11px;padding:6px 10px" onclick="visualizarDoc('rel_${tipo}', { titulo: '${tipo === 'serasa' ? 'Relatorio Serasa' : 'Relatorio CENPROT'}', dados: PESCADO_RELATORIOS['${tipo}'] })" title="Visualizar">ver</button>`:''}
- ${ok?`<button class="btn btn-s" style="font-size:11px;padding:6px 10px;color:var(--R)" onclick="limparRelatorio('${tipo}')" title="Limpar">x</button>`:''}
+ <!-- v4.42d: botoes maiores e mais claros — colar/upload em destaque -->
+ <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr)">
+ <button class="btn" style="flex:1;background:#012A2A;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s" onmouseover="this.style.background='#15746E'" onmouseout="this.style.background='#012A2A'" onclick="colarRelatorio('${tipo}')">Colar / editar relatorio</button>
+ <button class="btn" style="flex:1;background:#fff;color:#012A2A;border:2px solid #012A2A;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s" onmouseover="this.style.background='#F0F7F6'" onmouseout="this.style.background='#fff'" onclick="uploadRelatorio('${tipo}')">Upload PDF</button>
+ ${ok?`<button class="btn btn-s" style="font-size:11px;padding:8px 12px" onclick="visualizarDoc('rel_${tipo}', { titulo: '${tipo === 'serasa' ? 'Relatorio Serasa' : 'Relatorio CENPROT'}', dados: PESCADO_RELATORIOS['${tipo}'] })" title="Visualizar">ver</button>`:''}
+ ${ok?`<button class="btn btn-s" style="font-size:11px;padding:8px 10px;color:var(--R)" onclick="limparRelatorio('${tipo}')" title="Limpar">x</button>`:''}
  </div>
  </div>`;
  }
@@ -5004,7 +5006,8 @@ document.querySelectorAll('.mo').forEach(mo => {
  const titulo = tipo === 'serasa' ? 'Relatorio Serasa' : 'Relatorio CENPROT/Cartorio';
  const wrap = document.createElement('div');
  wrap.id = 'mo-rel';
- wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center';
+ // v4.42d: z-index acima do modal ficha (.mo tem 1000) — antes ficava atras, invisivel e travava clicks
+ wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center';
  wrap.innerHTML = `
  <div style="background:#fff;max-width:680px;width:92%;max-height:90vh;overflow:auto;border-radius:14px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.25)">
  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
@@ -5040,7 +5043,7 @@ document.querySelectorAll('.mo').forEach(mo => {
    <div style="font-size:11px;color:var(--txt3);margin-top:10px">Preenchimento manual sem IA. Nao consome credito. Fica registrado como "origem: manual".</div>
  </div>
 
- <div id="rel-pane-texto">
+ <div id="rel-pane-texto" style="display:none">
  <textarea id="rel-texto" rows="10" placeholder="Cole aqui o conteudo do relatorio. Pode ser texto cru, copia da tela, qualquer formato..." style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:8px;font-size:12px;font-family:'Courier New',monospace;resize:vertical"></textarea>
  <div style="font-size:11px;color:var(--txt3);margin-top:6px">Dica: no Serasa, selecione o relatorio inteiro (Ctrl+A) e copie (Ctrl+C). Cole aqui (Ctrl+V).</div>
  </div>
@@ -5071,10 +5074,12 @@ document.querySelectorAll('.mo').forEach(mo => {
  </div>`;
  document.body.appendChild(wrap);
 
- let modo = 'texto';
+ // v4.42d: modo default = manual (aba destacada) + texto do botao Confirmar
+ let modo = 'manual';
  let imagemBase64 = null;
  let imagemMime = null;
  let arquivo = null;
+ try { document.getElementById('rel-confirmar').textContent = 'Salvar preenchimento manual'; } catch(_){}
 
  document.querySelectorAll('#rel-tabs .rel-tab').forEach(btn => {
  btn.addEventListener('click', () => {
