@@ -799,7 +799,9 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
 
 <!-- MODAL ANÁLISE -->
 <div class="mo" id="mo-analise">
- <div class="mo-box" style="max-width:1100px">
+ <div class="mo-box" style="max-width:1100px;position:relative">
+ <!-- v4.43h: X absoluto gigante — sempre visivel, sempre clicavel -->
+ <button type="button" data-action="close-analise" onclick="var m=document.getElementById('mo-analise');if(m){m.classList.remove('open');document.body.style.overflow='';}" style="position:absolute;top:10px;right:12px;width:40px;height:40px;border-radius:50%;background:#991B1B;color:#fff;border:none;font-size:24px;font-weight:900;cursor:pointer;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;line-height:1" title="Fechar (ESC)">X</button>
  <div class="mo-hd">
  <div>
  <div class="mo-title" id="mo-title">—</div>
@@ -3976,6 +3978,34 @@ document.addEventListener('keydown', function(e){
     var vd = document.getElementById('mo-veredito'); if (vd) vd.remove();
   }
 });
+
+// v4.43h: FORCA BRUTA — delegated listener que captura qualquer click em botao "Fechar" dentro de .mo
+document.addEventListener('click', function(e){
+  var el = e.target;
+  if (!el) return;
+  // sobe ate 4 niveis procurando um botao/elemento cujo texto contem "Fechar"
+  var cur = el;
+  for (var i = 0; i < 4 && cur; i++){
+    var txt = (cur.textContent||'').trim().toLowerCase();
+    var isClose = /^\s*fechar\s*$/i.test(txt) || cur.id === 'mo-analise-close' || cur.getAttribute && cur.getAttribute('data-action') === 'close-analise';
+    if (isClose){
+      // esta dentro de algum .mo?
+      var parent = cur;
+      while (parent && parent !== document.body){
+        if (parent.classList && parent.classList.contains('mo')){
+          e.preventDefault();
+          e.stopPropagation();
+          parent.classList.remove('open');
+          document.body.style.overflow = '';
+          console.log('[v4.43h] Modal fechado via delegated listener:', parent.id);
+          return false;
+        }
+        parent = parent.parentNode;
+      }
+    }
+    cur = cur.parentNode;
+  }
+}, true); // useCapture=true pra pegar antes de qualquer handler
 
 // Fechar modal ao clicar no backdrop
 document.querySelectorAll('.mo').forEach(mo => {
