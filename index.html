@@ -812,7 +812,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  </div>
  <div style="display:flex;gap:8px">
  <button class="btn btn-s btn-sm" onclick="closeMo('mo-analise')">Fechar</button>
- <button class="btn btn-y btn-sm" onclick="closeMo('mo-analise');nav('laudo')">Gerar relatorio</button>
+ <button class="btn btn-y btn-sm" onclick="abrirRelatorioComDados()">Gerar relatorio</button>
  </div>
  </div>
  </div>
@@ -3634,6 +3634,58 @@ function buildRelCharts() {
 // ══════════════════════════════════════
 // LAUDO FINAL
 // ══════════════════════════════════════
+// v4.43b: captura score/limite/prazo do modal ANTES de gerar relatorio
+window.abrirRelatorioComDados = function(){
+  try {
+    const a = D.analyses.find(x=>x.id===_curAnaliseId);
+    if (a){
+      var s = document.getElementById('rep-score')?.value;
+      var l = document.getElementById('rep-limite')?.value?.trim();
+      var p = document.getElementById('rep-prazo')?.value;
+      var c = document.getElementById('rep-cond')?.value?.trim();
+      if (s) a.score = parseInt(s,10);
+      if (l) a.limite_aprovado = l;
+      if (p) a.prazo_aprovado = p;
+      if (c) a.justificativa = c;
+    }
+  } catch(e){ console.warn('[abrirRelatorio] captura falhou:', e.message); }
+  closeMo('mo-analise');
+  nav('laudo');
+};
+
+// v4.43b: submeter a gerencia direto do relatorio
+window.submeterGerenciaDoRelatorio = function(){
+  const a = D.analyses.find(x=>x.id===_curAnaliseId) || D.analyses[0];
+  if(!a) return;
+  var motivo = prompt('Motivo do envio a gerencia (obrigatorio):', a.justificativa || '');
+  if (motivo === null) return;
+  if (!motivo || motivo.trim().length < 5){ alert('Motivo precisa ter pelo menos 5 caracteres.'); return; }
+  a.final = 'Submeter a gerencia';
+  a.decisao_final = 'Submeter a gerencia';
+  a.status = 'Aguardando revisão humana';
+  a.justificativa = motivo.trim();
+  a.decisao_user = (window.PESCADO_USER && window.PESCADO_USER.nome) || 'Francisco Elves';
+  a.decisao_dt = new Date().toISOString();
+  toast('Enviado a gerencia');
+  // Persiste no Supabase
+  try {
+    var putId = a._dbId || a.id;
+    fetch('/api/fichas?id=' + encodeURIComponent(putId), {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        decisao_final: a.decisao_final,
+        justificativa: a.justificativa,
+        status: a.status,
+        score: a.score,
+        decisao_user: a.decisao_user,
+        decisao_dt: a.decisao_dt
+      })
+    }).catch(function(e){ console.warn('[submeter] PUT falhou:', e.message); });
+  } catch(e){ console.warn('[submeter] erro:', e.message); }
+  nav('laudo');
+};
+
 function pgLaudo() {
  const a = D.analyses.find(x=>x.id===_curAnaliseId) || D.analyses[0];
  if(!a) return '<div style="padding:40px;text-align:center;color:var(--txt3)">Nenhuma análise selecionada</div>';
@@ -3770,8 +3822,44 @@ function pgLaudo() {
  </div>
  </div>
  </div>
- <div style="display:flex;gap:12px;margin-top:16px">
+ ${(function(){
+   // v4.43b: bloco de REGRAS DE APROVACAO / POLITICA DE CREDITO
+   var sc = a.score || 0;
+   var faixa = sc >= 700 ? 'BAIXO RISCO' : sc >= 601 ? 'RISCO MODERADO' : sc >= 501 ? 'RISCO ELEVADO' : sc > 0 ? 'ALTO RISCO' : 'SEM SCORE';
+   function row(min, max, lbl, hint, active){
+     var bg = active ? '#012A2A' : '#F5F7F6';
+     var cor = active ? '#fff' : '#0A3332';
+     var accent = active ? '#7FB89B' : '#5F7573';
+     return '<tr style="background:' + bg + ';color:' + cor + '"><td style="padding:8px 10px;font-weight:700;font-size:12px;border-bottom:1px solid ' + (active?'#0A3332':'#E5E9E7') + '">' + lbl + '</td>'
+          + '<td style="padding:8px 10px;font-size:12px;border-bottom:1px solid ' + (active?'#0A3332':'#E5E9E7') + '">' + (min?min:'≥ 0') + (max?' — ' + max:'') + '</td>'
+          + '<td style="padding:8px 10px;font-size:11.5px;color:' + accent + ';border-bottom:1px solid ' + (active?'#0A3332':'#E5E9E7') + '">' + hint + '</td></tr>';
+   }
+   var html = '<div style="margin-bottom:20px">'
+      + '<div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#0A3332">Regras e politica de credito aplicadas</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-family:Inter,sans-serif;border:1px solid #E5E9E7;border-radius:6px;overflow:hidden">'
+      + '<thead style="background:#F0F3F1"><tr>'
+      + '<th style="padding:8px 10px;font-size:10.5px;font-weight:700;color:#5F7573;text-align:left;letter-spacing:.06em;text-transform:uppercase">Faixa</th>'
+      + '<th style="padding:8px 10px;font-size:10.5px;font-weight:700;color:#5F7573;text-align:left;letter-spacing:.06em;text-transform:uppercase">Score</th>'
+      + '<th style="padding:8px 10px;font-size:10.5px;font-weight:700;color:#5F7573;text-align:left;letter-spacing:.06em;text-transform:uppercase">Politica sugerida</th>'
+      + '</tr></thead><tbody>'
+      + row(701, 1000, 'BAIXO RISCO',      'Aprovacao ate limite pretendido', faixa==='BAIXO RISCO')
+      + row(601, 700,  'RISCO MODERADO',   'Aprovacao com ressalvas / limite reduzido', faixa==='RISCO MODERADO')
+      + row(501, 600,  'RISCO ELEVADO',    'Submeter a gerencia OU somente a vista', faixa==='RISCO ELEVADO')
+      + row(0,   500,  'ALTO RISCO',       'Reprovar credito a prazo — somente a vista', faixa==='ALTO RISCO')
+      + '</tbody></table>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'
+      + '<div style="font-size:11px;padding:5px 10px;background:#EEF2F0;border-radius:12px;color:#0A3332"><b>Filtro Serasa:</b> ' + (a.serasa && a.serasa!=='Não consultado' ? 'consultado' : 'nao consultado') + '</div>'
+      + '<div style="font-size:11px;padding:5px 10px;background:#EEF2F0;border-radius:12px;color:#0A3332"><b>Filtro CENPROT:</b> ' + (a.cenprot && a.cenprot!=='Não consultado' ? 'consultado' : 'nao consultado') + '</div>'
+      + '<div style="font-size:11px;padding:5px 10px;background:#EEF2F0;border-radius:12px;color:#0A3332"><b>Docs:</b> ' + (a.docSt || 'Pendente') + '</div>'
+      + '<div style="font-size:11px;padding:5px 10px;background:#EEF2F0;border-radius:12px;color:#0A3332"><b>Valor pretendido:</b> ' + (R$(a.valor||0)) + '</div>'
+      + '</div>'
+      + '</div>';
+   return html;
+ })()}
+
+ <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
  <button class="btn btn-s btn-sm" onclick="nav('fila')">← Voltar</button>
+ <button onclick="window.submeterGerenciaDoRelatorio()" style="background:#B45309;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">Submeter a gerencia</button>
  </div>
  </div>`;
 }
