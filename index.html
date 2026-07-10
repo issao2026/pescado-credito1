@@ -7190,18 +7190,29 @@ window.gerarEmailRetorno = function(tipo){
     parecerManual = (parecerManual || "").trim();
     var blocoParecer = parecerManual ? ("\n\nParecer da análise:\n" + parecerManual + "\n") : "";
 
+    // v4.43r: detecta score baixo + protesto pra sugerir explicitamente a vista OU gerencia
+    var cenTxtE = String((a && a.cenprot) || "").toLowerCase();
+    var temProtestoE = cenTxtE === 'sim' || /sim.*protest/i.test(cenTxtE) || /^com.*protest/i.test(cenTxtE);
+    var scoreBaixoE = s > 0 && s < 600;
+    var blocoProtesto = "";
+    if (temProtestoE && scoreBaixoE){
+      blocoProtesto = "\n\nAlerta: identificamos que o cliente possui protesto ativo registrado no CENPROT, o que reforça a recomendação de cautela. Duas alternativas podem ser consideradas:\n\n1. Realizar as operações exclusivamente na modalidade à vista, sem concessão de limite ou prazo.\n2. Submeter o caso à Gestão para parecer em caráter de exceção, com justificativa formal do risco assumido.";
+    } else if (temProtestoE){
+      blocoProtesto = "\n\nObservação: o cliente possui protesto ativo registrado no CENPROT. Recomenda-se avaliação criteriosa antes da concessão de qualquer limite ou prazo.";
+    }
+
     var corpo = "", assunto = "";
     if (tipo === "aprovado") {
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas." + blocoParecer + "\n\nDessa forma, aprovamos as seguintes condições comerciais:\n\nLimite de crédito: " + (limite || "R$ ______") + "\nPrazo de pagamento: " + (prazo || "14 dias") + "\n\nAs condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas." + blocoParecer + blocoProtesto + "\n\nDessa forma, aprovamos as seguintes condições comerciais:\n\nLimite de crédito: " + (limite || "R$ ______") + "\nPrazo de pagamento: " + (prazo || "14 dias") + "\n\nAs condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     } else if (tipo === "reprovado") {
       // v4.43j: template de reprovacao com parecer
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", o Departamento de Crédito e Cobrança nao aprova, neste momento, a concessão de limite de crédito ou prazo para faturamento." + blocoParecer + "\n\nA reanálise poderá ser solicitada oportunamente, mediante apresentação de documentação complementar ou melhora do perfil de crédito do cliente.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", o Departamento de Crédito e Cobrança nao aprova, neste momento, a concessão de limite de crédito ou prazo para faturamento." + blocoParecer + blocoProtesto + "\n\nA reanálise poderá ser solicitada oportunamente, mediante apresentação de documentação complementar ou melhora do perfil de crédito do cliente.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     } else {
       // a_vista (padrao pra qualquer coisa que nao seja aprovado ou reprovado)
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
-      corpo = "Prezado,\n\nApós análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito." + blocoParecer + "\n\nDessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\nContudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+      corpo = "Prezado,\n\nApós análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito." + blocoParecer + blocoProtesto + "\n\nDessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\nContudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     }
 
     var old = document.getElementById("email-modal"); if (old) old.remove();
