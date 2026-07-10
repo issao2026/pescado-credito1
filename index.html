@@ -803,11 +803,14 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  <!-- v4.43h: X absoluto gigante — sempre visivel, sempre clicavel -->
  <button type="button" data-action="close-analise" onclick="var m=document.getElementById('mo-analise');if(m){m.classList.remove('open');document.body.style.overflow='';}" style="position:absolute;top:10px;right:12px;width:40px;height:40px;border-radius:50%;background:#991B1B;color:#fff;border:none;font-size:24px;font-weight:900;cursor:pointer;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;line-height:1" title="Fechar (ESC)">X</button>
  <div class="mo-hd">
+ <div style="display:flex;align-items:center;gap:14px;flex:1">
  <div>
  <div class="mo-title" id="mo-title">—</div>
  <div class="mo-sub" id="mo-sub">—</div>
  </div>
- <button class="btn btn-s btn-sm" style="background:#0A3332;color:#fff;border-color:#0A3332" onclick="pescadoAssistenteAbrir()">Assistente IA</button>
+ <!-- v4.43l: Assistente IA junto do titulo, bem a esquerda -->
+ <button class="btn btn-s btn-sm" style="background:#0A3332;color:#fff;border-color:#0A3332;padding:6px 12px;font-size:12px;white-space:nowrap" onclick="pescadoAssistenteAbrir()">Assistente IA</button>
+ </div>
  <!-- v4.43i: botao Fechar do topo removido — X vermelho absoluto ja resolve -->
  </div>
  <div class="mo-body" id="mo-body"></div>
@@ -7047,7 +7050,7 @@ window.imprimirFichaAtual = function(){
       }
       var modelo = document.getElementById("pa-modelo")?.value || "claude-haiku-4-5-20251001";
       var keyExtra = document.getElementById("pa-key")?.value.trim() || "";
-      var body = { messages: msgs, modelo: modelo };
+      var body = { mensagens: msgs, modelo: modelo };
       if (keyExtra) body.api_key_override = keyExtra;
       var r = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
       var j = await r.json();
