@@ -812,7 +812,7 @@ input:checked + .tog-sl::before { transform:translateX(16px); }
  </div>
  <div style="display:flex;gap:8px">
  <button class="btn btn-s btn-sm" onclick="closeMo('mo-analise')">Fechar</button>
- <button class="btn btn-y btn-sm" onclick="closeMo('mo-analise');nav('laudo')">Gerar laudo</button>
+ <button class="btn btn-y btn-sm" onclick="closeMo('mo-analise');nav('laudo')">Gerar relatorio</button>
  </div>
  </div>
  </div>
@@ -988,7 +988,7 @@ function justif(a) {
 // ══════════════════════════════════════
 // NAV
 // ══════════════════════════════════════
-const titles = {dashboard:'Dashboard',fila:'Fila Operacional',nova:'Nova Análise',politica:'Política de Crédito',relatorios:'Relatórios',laudo:'Laudo Final',bi_lagostao:'Análise Comercial · Lagostão Pescados'};
+const titles = {dashboard:'Dashboard',fila:'Fila Operacional',nova:'Nova Análise',politica:'Política de Crédito',relatorios:'Relatórios',laudo:'Relatório de Crédito',bi_lagostao:'Análise Comercial · Lagostão Pescados'};
 function nav(p) {
  D.page=p;
  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
@@ -1724,6 +1724,41 @@ function buildCharts() {
  cpEl.onclick = e => { const pts=chP.getElementsAtEventForMode(e,'nearest',{intersect:true},false); if(pts.length){ setF('aguardando_consulta'); nav('fila'); } };
  }
 }
+
+// ══════════════════════════════════════
+// v4.43 — VER CREDITO (historico do cliente)
+// ══════════════════════════════════════
+window.verCreditoCliente = async function(cnpj){
+  try {
+    var doc = String(cnpj||'').replace(/\D/g,'');
+    if (!doc){ toast('CNPJ/CPF invalido'); return; }
+    // Filtra da propria lista em memoria (rapido, sem endpoint)
+    var lista = (window.D && D.analyses || []).filter(function(x){
+      return String(x.cnpj||'').replace(/\D/g,'') === doc;
+    }).sort(function(a,b){ return (b.dt||'').localeCompare(a.dt||''); });
+    if (!lista.length){
+      toast('Nenhum historico encontrado para ' + doc);
+      return;
+    }
+    // Monta modal com historico
+    var old = document.getElementById('mo-hist'); if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'mo-hist';
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
+    var linhas = lista.map(function(a){
+      var st = a.final || a.decisao_final || '—';
+      var cor = /aprov/i.test(st) ? '#059669' : /reprov/i.test(st) ? '#DC2626' : '#5F7573';
+      var limApr = a.limite_aprovado || (a.dados && a.dados.limite_aprovado) || '—';
+      return '<tr style="border-bottom:1px solid #EEF2F1"><td style="padding:8px 12px;font-size:12px">'+(a.dt||'—')+'</td><td style="padding:8px 12px;font-size:12px;font-weight:600">'+(a.vendedor||'—')+'</td><td style="padding:8px 12px;font-size:12px">'+R$(a.valor)+'</td><td style="padding:8px 12px;font-size:12px">'+(a.score||'—')+'</td><td style="padding:8px 12px;font-size:12px;color:'+cor+';font-weight:700">'+st+'</td><td style="padding:8px 12px;font-size:12px;font-weight:600">'+(limApr==='—'?'—':'R$ '+limApr)+'</td></tr>';
+    }).join('');
+    wrap.innerHTML = '<div style="background:#fff;max-width:820px;width:100%;max-height:85vh;overflow:auto;border-radius:14px;padding:24px 26px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div><div style="font-family:Poppins,sans-serif;font-size:18px;font-weight:700;color:#012A2A">Historico de credito</div><div style="font-size:12px;color:#5F7573;font-family:monospace">CNPJ/CPF: '+doc+' · '+lista.length+' ficha(s)</div></div><button onclick="document.getElementById(\'mo-hist\').remove()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:#5F7573">×</button></div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#F5F7F6"><th style="padding:10px 12px;font-size:11px;text-align:left;color:#5F7573;text-transform:uppercase">Data</th><th style="padding:10px 12px;font-size:11px;text-align:left;color:#5F7573;text-transform:uppercase">Vendedor</th><th style="padding:10px 12px;font-size:11px;text-align:left;color:#5F7573;text-transform:uppercase">Valor</th><th style="padding:10px 12px;font-size:11px;text-align:left;color:#5F7573;text-transform:uppercase">Score</th><th style="padding:10px 12px;font-size:11px;text-align:left;color:#5F7573;text-transform:uppercase">Decisao</th><th style="padding:10px 12px;font-size:11px;text-align:left;color:#5F7573;text-transform:uppercase">Limite</th></tr></thead><tbody>'+linhas+'</tbody></table></div>';
+    wrap.addEventListener('click', function(e){ if (e.target === wrap) wrap.remove(); });
+    document.body.appendChild(wrap);
+  } catch(e){
+    if (window.console) console.warn('[verCreditoCliente]', e);
+    if (typeof toast === 'function') toast('Erro ao carregar historico');
+  }
+};
 
 // ══════════════════════════════════════
 // v4.42 — AUDITOR DE FICHA INCOMPLETA
@@ -3608,10 +3643,10 @@ function pgLaudo() {
  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;border-bottom:2px solid var(--bdr);padding-bottom:20px;gap:24px">
  <div style="flex:1">
  <div style="font-size:20px;font-weight:900;color:var(--txt);letter-spacing:-0.5px">Pescado Crédito</div>
- <div style="font-size:12px;color:var(--txt3);margin-top:4px">Laudo de Análise de Crédito</div>
+ <div style="font-size:12px;color:var(--txt3);margin-top:4px">Relatorio de Analise de Credito</div>
  <div style="font-size:11px;color:var(--txt3);margin-top:14px">
    <div>Gerado em ${dt2}</div>
-   <div>Laudo #${String(a.id).padStart(4,'0')}</div>
+   <div>Relatorio #${String(a.id).padStart(4,'0')}</div>
  </div>
  </div>
  ${(function(){
@@ -3648,7 +3683,72 @@ function pgLaudo() {
    return '<div style="background:' + bg + ';border-radius:8px;padding:16px;display:flex;gap:16px;align-items:center"><div><div style="font-weight:800;font-size:15px;color:' + fg + '">' + titulo + '</div><div style="font-size:12px;color:var(--txt2);margin-top:4px">' + justif(a) + '</div></div></div>';
  })()}
  </div>
- ${a.alerts.length>0?`<div style="margin-bottom:20px"><div style="font-size:14px;font-weight:700;margin-bottom:10px">Alertas identificados</div>${a.alerts.map(al=>`<div style="padding:8px 12px;background:#FEF3C7;border-radius:6px;font-size:12px;color:#92400E;margin-bottom:6px"> ${al}</div>`).join('')}</div>`:''}
+ ${(function(){
+   // v4.43: bloco de APONTAMENTOS (sempre mostra, mesmo com score alto)
+   var apts = [];
+   var d = a.dados || {};
+   // 1. Auditor de ficha incompleta (se ha pendencias)
+   try {
+     var au = window.auditarFichaIncompleta && window.auditarFichaIncompleta(a);
+     if (au && au.pendencias && au.pendencias.length){
+       au.pendencias.forEach(function(p){ apts.push({sev:p.sev, texto:p.texto, origem:'Auditor'}); });
+     }
+   } catch(_){}
+   // 2. Alerts vindos da ficha
+   (a.alerts||[]).forEach(function(al){ apts.push({sev:'atencao', texto:al, origem:'Analise'}); });
+   // 3. Restricoes Serasa
+   var rest = a.rest || d.rest || (d.analise_ia && d.analise_ia.consultas && d.analise_ia.consultas.serasa && d.analise_ia.consultas.serasa.restricoes) || 0;
+   if (rest > 0) apts.push({sev:'critico', texto: rest + ' restricao(oes) apontadas no Serasa', origem:'Serasa'});
+   // 4. Protestos CENPROT
+   var prot = a.prot || d.prot || (d.analise_ia && d.analise_ia.consultas && d.analise_ia.consultas.cenprot && d.analise_ia.consultas.cenprot.protestos) || 0;
+   if (prot > 0) apts.push({sev:'critico', texto: prot + ' protesto(s) ativo(s) no CENPROT', origem:'CENPROT'});
+   // 5. Analise de CAPITAL SOCIAL vs VALOR PRETENDIDO
+   var capital = a.capital_social || d.capital_social || (d.ocrData && (function(){
+     var cs = null;
+     (d.ocrData||[]).forEach(function(oc){
+       (oc.campos_extraidos||[]).forEach(function(c){
+         var k = String(c.campo||'').toLowerCase();
+         if ((k.indexOf('capital')>=0) && c.valor_normalizado){
+           var num = parseFloat(String(c.valor_normalizado).replace(/[^\d,.-]/g,'').replace('.','').replace(',','.'));
+           if (num > 0) cs = num;
+         }
+       });
+     });
+     return cs;
+   })());
+   var valor = Number(a.valor||0);
+   var capNum = Number(capital||0);
+   if (capNum > 0 && valor > 0){
+     var razao = (valor / capNum) * 100;
+     if (razao > 100) apts.push({sev:'critico', texto:'Valor pretendido supera o capital social (R$ '+valor.toLocaleString('pt-BR')+' vs. R$ '+capNum.toLocaleString('pt-BR')+')', origem:'Capital Social'});
+     else if (razao > 50) apts.push({sev:'atencao', texto:'Valor pretendido representa '+razao.toFixed(0)+'% do capital social', origem:'Capital Social'});
+   } else if (valor > 0 && !capNum){
+     apts.push({sev:'atencao', texto:'Capital social nao informado — nao foi possivel comparar com valor pretendido', origem:'Capital Social'});
+   }
+   // 6. Alerta score alto com pendencia (o ponto especifico do usuario)
+   if ((a.score||0) >= 700 && apts.some(function(p){return p.sev==='critico';})){
+     apts.unshift({sev:'atencao', texto:'Atencao: score alto ('+a.score+') mas ha apontamentos criticos — reveja antes de aprovar', origem:'Sistema'});
+   }
+   if (!apts.length){
+     return '<div style="margin-bottom:20px"><div style="font-size:14px;font-weight:700;margin-bottom:10px">Apontamentos</div><div style="padding:10px 14px;background:#D1FAE5;border-left:3px solid #065F46;border-radius:6px;font-size:12.5px;color:#065F46">Sem apontamentos. Ficha limpa em todos os checks.</div></div>';
+   }
+   var hAp = '<div style="margin-bottom:20px"><div style="font-size:14px;font-weight:700;margin-bottom:10px">Apontamentos</div>';
+   apts.forEach(function(p){
+     var cor = p.sev==='critico'?'#991B1B':p.sev==='atencao'?'#92400E':'#065F46';
+     var bg  = p.sev==='critico'?'#FEE2E2':p.sev==='atencao'?'#FEF3C7':'#D1FAE5';
+     var borda = p.sev==='critico'?'#991B1B':p.sev==='atencao'?'#92400E':'#065F46';
+     hAp += '<div style="padding:8px 12px;background:'+bg+';border-left:3px solid '+borda+';border-radius:6px;font-size:12.5px;color:'+cor+';margin-bottom:6px"><b style="opacity:.7;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase">['+p.origem+']</b> '+p.texto+'</div>';
+   });
+   hAp += '</div>';
+   return hAp;
+ })()}
+
+ <!-- v4.43: botao Ver credito (historico do cliente) -->
+ <div style="margin-bottom:20px;padding:12px 14px;background:#F5F7F6;border-radius:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px">
+   <div><b>Historico deste cliente:</b> ${a.cnpj || '—'}</div>
+   <button onclick="window.verCreditoCliente && window.verCreditoCliente('${(a.cnpj||'').replace(/\D/g,'')}')" style="background:#012A2A;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Ver credito</button>
+ </div>
+
  <div style="border-top:1px solid var(--bdr);padding-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px">
  <div>
  <div style="font-size:11px;color:var(--txt3);margin-bottom:8px">Analista responsável</div>
