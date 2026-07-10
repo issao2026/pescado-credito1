@@ -1901,7 +1901,7 @@ function pgFila() {
  <td>${pill(a.status)}</td>
  <td onclick="event.stopPropagation()">
  <div class="row-acts"><!-- v4.43b: aspas em ${a.id} pra funcionar com UUID do Supabase -->
- <button class="act-btn" onclick="openEdit('${a.id}')" title="Editar ficha">editar️</button>
+ <button class="act-btn" onclick="openAnalise('${a.id}')" title="Editar ficha">editar️</button>
  <button class="act-btn arch" onclick="toggleArquivar('${a.id}')" title="${a.arquivado?'Desarquivar':'Arquivar'}">${a.arquivado?'':''}</button>
  <button class="act-btn del" onclick="confirmDelete('${a.id}')" title="Excluir ficha">apagar️</button>
  </div>
@@ -3658,21 +3658,23 @@ window.abrirRelatorioComDados = function(){
   nav('laudo');
 };
 
-// v4.43b: submeter a gerencia direto do relatorio
-window.submeterGerenciaDoRelatorio = function(){
+// v4.43e: decisao direto do relatorio (Aprovado / Reprovado / A vista)
+window.decisaoDoRelatorio = function(decisao){
   const a = D.analyses.find(x=>x.id===_curAnaliseId) || D.analyses[0];
   if(!a) return;
-  var motivo = prompt('Motivo do envio a gerencia (obrigatorio):', a.justificativa || '');
-  if (motivo === null) return;
-  if (!motivo || motivo.trim().length < 5){ alert('Motivo precisa ter pelo menos 5 caracteres.'); return; }
-  a.final = 'Submeter a gerencia';
-  a.decisao_final = 'Submeter a gerencia';
-  a.status = 'Aguardando revisão humana';
-  a.justificativa = motivo.trim();
+  var confirma = confirm('Confirmar decisao "' + decisao + '" para ' + (a.nome||'') + '?');
+  if (!confirma) return;
+  var justif = prompt('Justificativa (opcional):', a.justificativa || '');
+  if (justif === null) return; // usuario cancelou
+  a.final = decisao;
+  a.decisao_final = decisao;
+  a.justificativa = (justif || '').trim() || a.justificativa || decisao;
+  if (decisao === 'Aprovado') a.status = 'Aprovado';
+  else if (decisao === 'Reprovado') a.status = 'Recusado';
+  else if (decisao === 'Somente a vista') a.status = 'Somente à vista';
   a.decisao_user = (window.PESCADO_USER && window.PESCADO_USER.nome) || 'Francisco Elves';
   a.decisao_dt = new Date().toISOString();
-  toast('Enviado a gerencia');
-  // Persiste no Supabase
+  toast('Decisao registrada: ' + decisao);
   try {
     var putId = a._dbId || a.id;
     fetch('/api/fichas?id=' + encodeURIComponent(putId), {
@@ -3686,9 +3688,10 @@ window.submeterGerenciaDoRelatorio = function(){
         decisao_user: a.decisao_user,
         decisao_dt: a.decisao_dt
       })
-    }).catch(function(e){ console.warn('[submeter] PUT falhou:', e.message); });
-  } catch(e){ console.warn('[submeter] erro:', e.message); }
-  nav('laudo');
+    }).catch(function(e){ console.warn('[decisaoRel] PUT falhou:', e.message); });
+  } catch(e){ console.warn('[decisaoRel] erro:', e.message); }
+  // Re-renderiza o relatorio pra mostrar decisao atualizada
+  setTimeout(function(){ try{ nav('laudo'); }catch(_){ } }, 100);
 };
 
 function pgLaudo() {
@@ -3748,6 +3751,17 @@ function pgLaudo() {
    return '<div style="background:' + bg + ';border-radius:8px;padding:16px;display:flex;gap:16px;align-items:center"><div><div style="font-weight:800;font-size:15px;color:' + fg + '">' + titulo + '</div><div style="font-size:12px;color:var(--txt2);margin-top:4px">' + justif(a) + '</div></div></div>';
  })()}
  </div>
+ ${(function(){
+   // v4.43e: parecer do analista (ChatGPT / escrita a mao)
+   var d = a.dados || {};
+   var parecer = a.parecer_manual || a.resumo_executivo || d.parecer_manual || d.resumo_executivo || (window.PESCADO_ANALISE_FINAL && window.PESCADO_ANALISE_FINAL.resumo_executivo) || '';
+   parecer = (parecer||'').trim();
+   if (!parecer) return '';
+   return '<div style="margin-bottom:20px">'
+        + '<div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#0A3332">Parecer do analista</div>'
+        + '<div style="background:#F5F7F6;border-left:3px solid #012A2A;border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.6;color:#0A3332;white-space:pre-wrap">' + parecer.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+        + '</div>';
+ })()}
  ${(function(){
    // v4.43: bloco de APONTAMENTOS (sempre mostra, mesmo com score alto)
    var apts = [];
@@ -3862,9 +3876,13 @@ function pgLaudo() {
    return html;
  })()}
 
- <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+ <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;align-items:center">
  <button class="btn btn-s btn-sm" onclick="nav('fila')">← Voltar</button>
- <button onclick="window.submeterGerenciaDoRelatorio()" style="background:#B45309;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">Submeter a gerencia</button>
+ <div style="flex:1"></div>
+ <span style="font-size:11px;color:#5F7573;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Decisao:</span>
+ <button onclick="window.decisaoDoRelatorio('Aprovado')" style="background:#065F46;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">Aprovado</button>
+ <button onclick="window.decisaoDoRelatorio('Reprovado')" style="background:#991B1B;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">Reprovado</button>
+ <button onclick="window.decisaoDoRelatorio('Somente a vista')" style="background:#B45309;color:#fff;border:none;border-radius:6px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer">A vista</button>
  </div>
  </div>`;
 }
@@ -5589,6 +5607,25 @@ document.querySelectorAll('.mo').forEach(mo => {
  window.salvarParecerManual = function(){
    const texto = (document.getElementById('par-texto')?.value || '').trim();
    if (texto.length < 20){ toast('Escreva um parecer com pelo menos 20 caracteres.'); return; }
+   // v4.43e: tambem persiste na ficha atual pra aparecer no relatorio depois
+   try {
+     if (window._curAnaliseId){
+       var ficha = D.analyses.find(function(x){ return x.id === window._curAnaliseId; });
+       if (ficha){
+         ficha.parecer_manual = texto;
+         ficha.resumo_executivo = texto;
+         if (!ficha.dados) ficha.dados = {};
+         ficha.dados.parecer_manual = texto;
+         // Persiste no Supabase
+         var putId = ficha._dbId || ficha.id;
+         fetch('/api/fichas?id=' + encodeURIComponent(putId), {
+           method:'PUT',
+           headers:{'Content-Type':'application/json'},
+           body: JSON.stringify({ parecer_manual: texto, resumo_executivo: texto })
+         }).catch(function(e){ console.warn('[parecer] PUT falhou:', e.message); });
+       }
+     }
+   } catch(e){ console.warn('[parecer] persist falhou:', e.message); }
    const risco = document.getElementById('par-risco')?.value || 'Moderado';
    const acao = document.getElementById('par-acao')?.value || 'aprovar';
    const limiteStr = (document.getElementById('par-limite')?.value || '').trim();
