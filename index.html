@@ -3798,6 +3798,21 @@ function pgLaudo() {
    // 4. Protestos CENPROT
    var prot = a.prot || d.prot || (d.analise_ia && d.analise_ia.consultas && d.analise_ia.consultas.cenprot && d.analise_ia.consultas.cenprot.protestos) || 0;
    if (prot > 0) apts.push({sev:'critico', texto: prot + ' protesto(s) ativo(s) no CENPROT', origem:'CENPROT'});
+   // 4b. v4.43q: CENPROT marcado como "Sim" (select do modal) — protesto confirmado sem numero exato
+   var cenTxt = String(a.cenprot||'').toLowerCase();
+   var temProtestoSim = cenTxt === 'sim' || /sim.*protest/i.test(cenTxt) || /^com/i.test(cenTxt);
+   var temProtestoNao = /^nao/i.test(cenTxt) || /^não/i.test(cenTxt) || /sem protest/i.test(cenTxt);
+   if (temProtestoSim && prot === 0){
+     apts.push({sev:'critico', texto:'Cliente possui protesto ativo (CENPROT marcado como SIM) — verificar valor e cartorio', origem:'CENPROT'});
+   }
+   // Score alto + protesto = inconsistencia critica
+   if (temProtestoSim && (a.score||0) >= 700){
+     apts.unshift({sev:'critico', texto:'INCONSISTENCIA: score alto ('+a.score+') mas cliente TEM protesto ativo — investigar antes de aprovar', origem:'Analise'});
+   }
+   // Score baixo + sem protesto e coerente, so registra info
+   if (temProtestoNao){
+     apts.push({sev:'ok', texto:'CENPROT: sem protesto ativo', origem:'CENPROT'});
+   }
    // 5. Analise de CAPITAL SOCIAL vs VALOR PRETENDIDO
    var capital = a.capital_social || d.capital_social || (d.ocrData && (function(){
      var cs = null;
@@ -3938,6 +3953,31 @@ window.fmtLimiteBlur = function(el){
   } catch(e){}
 };
 
+// v4.43p: atualiza SO o visual do marcador grande em tempo real (sem persistir)
+window.atualizarMarcadorGrande = function(valor){
+  try {
+    var sc = parseInt(valor,10);
+    if (isNaN(sc)) sc = 0;
+    var corScore = sc >= 700 ? '#2E5E2E' : sc >= 600 ? '#7A5A00' : sc >= 500 ? '#B45309' : sc ? '#7A1A1A' : '#9896A8';
+    var labelScore = sc >= 700 ? 'Baixo risco' : sc >= 600 ? 'Risco moderado' : sc >= 500 ? 'Risco elevado' : sc ? 'Alto risco' : 'Sem score';
+    var num = document.getElementById('score-num');
+    if (num){ num.textContent = sc || '--'; num.style.color = corScore; }
+    var lbl = document.getElementById('score-label');
+    if (lbl){
+      lbl.textContent = labelScore;
+      lbl.style.background = corScore + '14';
+      lbl.style.color = corScore;
+    }
+    var arc = document.getElementById('score-arc');
+    if (arc){
+      var circT = 2 * Math.PI * 80;
+      var offT = circT * (1 - Math.min(100,(sc/1000)*100)/100);
+      arc.setAttribute('stroke', corScore);
+      arc.setAttribute('stroke-dashoffset', offT);
+    }
+  } catch(e){}
+};
+
 // v4.43g: lanca score do Serasa direto no card
 window.atualizarScoreSerasa = function(valor){
   try {
@@ -3952,6 +3992,26 @@ window.atualizarScoreSerasa = function(valor){
     a.risco = sc > 700 ? 'Baixo' : sc >= 601 ? 'Moderado' : sc >= 501 ? 'Elevado' : 'Alto';
     // v4.43k: sincroniza com hidden rep-score
     var hs = document.getElementById('rep-score'); if (hs) hs.value = sc;
+    // v4.43p: atualiza marcador grande de score em tempo real
+    try {
+      var corScore = sc >= 700 ? '#2E5E2E' : sc >= 600 ? '#7A5A00' : sc >= 500 ? '#B45309' : sc ? '#7A1A1A' : '#9896A8';
+      var labelScore = sc >= 700 ? 'Baixo risco' : sc >= 600 ? 'Risco moderado' : sc >= 500 ? 'Risco elevado' : sc ? 'Alto risco' : 'Sem score';
+      var num = document.getElementById('score-num');
+      if (num){ num.textContent = sc || '--'; num.style.color = corScore; }
+      var lbl = document.getElementById('score-label');
+      if (lbl){
+        lbl.textContent = labelScore;
+        lbl.style.background = corScore + '14';
+        lbl.style.color = corScore;
+      }
+      var arc = document.getElementById('score-arc');
+      if (arc){
+        var circT = 2 * Math.PI * 80;
+        var offT = circT * (1 - Math.min(100,(sc/1000)*100)/100);
+        arc.setAttribute('stroke', corScore);
+        arc.setAttribute('stroke-dashoffset', offT);
+      }
+    } catch(e){ console.warn('[atualiza score grande]', e.message); }
     if (typeof toast === 'function') toast('Score Serasa: ' + sc + ' (' + a.risco + ')');
     // Persiste no Supabase
     var putId = a._dbId || a.id;
@@ -6125,28 +6185,24 @@ window.imprimirFichaAtual = function(){
 
     h += '</div>';  // fim coluna esquerda
 
-    // ---- DIREITA: score gigante circular ----
-    h += '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 0;border-left:1px solid #E8E5DE;border-radius:0">';
+    // ---- DIREITA: score gigante circular (v4.43p: com IDs pra atualizar live) ----
+    h += '<div id="score-grande-box" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 0;border-left:1px solid #E8E5DE;border-radius:0">';
     h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px">Score</div>';
     h += '<div style="position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center">';
     // SVG circular de fundo + arco do score
-    if(score){
-      const pct = Math.min(100, (score / 1000) * 100);
-      const circ = 2 * Math.PI * 80;
-      const off = circ * (1 - pct / 100);
-      h += '<svg width="180" height="180" viewBox="0 0 180 180" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">';
-      h += '<circle cx="90" cy="90" r="80" fill="none" stroke="#E8E5DE" stroke-width="8"/>';
-      h += '<circle cx="90" cy="90" r="80" fill="none" stroke="' + corScore + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + circ + '" stroke-dashoffset="' + off + '" style="transition:stroke-dashoffset .8s"/>';
-      h += '</svg>';
-      h += '<div style="text-align:center;z-index:1">';
-      h += '<div style="font-family:Poppins,sans-serif;font-size:48px;font-weight:800;color:' + corScore + ';letter-spacing:-.04em;line-height:1">' + score + '</div>';
-      h += '<div style="font-family:Inter,sans-serif;font-size:10px;color:#9896A8;margin-top:4px">de 1000</div>';
-      h += '</div>';
-    } else {
-      h += '<div style="text-align:center"><div style="font-family:Poppins,sans-serif;font-size:32px;font-weight:700;color:#9896A8">--</div><div style="font-family:Inter,sans-serif;font-size:10.5px;color:#9896A8;margin-top:6px">Sem score</div></div>';
-    }
+    var pct = score ? Math.min(100, (score / 1000) * 100) : 0;
+    var circ2 = 2 * Math.PI * 80;
+    var off = circ2 * (1 - pct / 100);
+    h += '<svg width="180" height="180" viewBox="0 0 180 180" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">';
+    h += '<circle cx="90" cy="90" r="80" fill="none" stroke="#E8E5DE" stroke-width="8"/>';
+    h += '<circle id="score-arc" cx="90" cy="90" r="80" fill="none" stroke="' + corScore + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + circ2 + '" stroke-dashoffset="' + off + '" style="transition:stroke-dashoffset .8s,stroke .3s"/>';
+    h += '</svg>';
+    h += '<div style="text-align:center;z-index:1">';
+    h += '<div id="score-num" style="font-family:Poppins,sans-serif;font-size:48px;font-weight:800;color:' + corScore + ';letter-spacing:-.04em;line-height:1">' + (score || '--') + '</div>';
+    h += '<div style="font-family:Inter,sans-serif;font-size:10px;color:#9896A8;margin-top:4px">de 1000</div>';
     h += '</div>';
-    h += '<div style="margin-top:14px;padding:4px 14px;background:' + corScore + '14;color:' + corScore + ';border-radius:4px;font-family:Inter,sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">' + labelScore + '</div>';
+    h += '</div>';
+    h += '<div id="score-label" style="margin-top:14px;padding:4px 14px;background:' + corScore + '14;color:' + corScore + ';border-radius:4px;font-family:Inter,sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">' + labelScore + '</div>';
     if(a.rest != null) h += '<div style="font-family:Inter,sans-serif;font-size:11px;color:#9896A8;margin-top:10px">Restricoes Serasa: <b style="color:#191824">' + a.rest + '</b></div>';
     if(a.prot != null) h += '<div style="font-family:Inter,sans-serif;font-size:11px;color:#9896A8;margin-top:2px">Protestos CENPROT: <b style="color:#191824">' + a.prot + '</b></div>';
     h += '</div>';
@@ -6165,7 +6221,7 @@ window.imprimirFichaAtual = function(){
     h += '<div style="padding:14px 16px;border:1px solid #E8E5DE;border-radius:8px;background:#fff">';
     h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px">Serasa — Lancar score</div>';
     h += '<div style="display:flex;gap:8px;align-items:center">';
-    h += '<input id="rep-serasa-score" type="number" min="0" max="1000" value="' + scoreAtual + '" placeholder="0-1000" onchange="window.atualizarScoreSerasa && window.atualizarScoreSerasa(this.value)" style="flex:1;padding:10px 12px;border:1px solid #D6DDDA;border-radius:6px;font-size:18px;font-family:Poppins,sans-serif;font-weight:800;color:#0A3332;text-align:center">';
+    h += '<input id="rep-serasa-score" type="number" min="0" max="1000" value="' + scoreAtual + '" placeholder="0-1000" oninput="window.atualizarMarcadorGrande && window.atualizarMarcadorGrande(this.value)" onchange="window.atualizarScoreSerasa && window.atualizarScoreSerasa(this.value)" style="flex:1;padding:10px 12px;border:1px solid #D6DDDA;border-radius:6px;font-size:18px;font-family:Poppins,sans-serif;font-weight:800;color:#0A3332;text-align:center">';
     h += '<div style="font-size:11px;color:#5F7573">/1000</div>';
     h += '</div>';
     h += '<div style="font-size:10.5px;color:#5F7573;margin-top:6px">Digite o score do Serasa (Enter salva)</div>';
