@@ -6213,9 +6213,14 @@ window.imprimirFichaAtual = function(){
 
     // v4.37c: botoes de gerar email de retorno (aparecem so apos decisao; usam limite_aprovado/prazo_aprovado do banco)
     if (decisaoFinal){
-      var tipoEmail = (decisaoFinal.indexOf('Aprovado') === 0 || decisaoFinal.indexOf('gerencia') >= 0) ? 'aprovado' : 'a_vista';
-      var rotuloEmail = tipoEmail === 'aprovado' ? 'Enviar retorno ao vendedor (Aprovado)' : 'Enviar retorno ao vendedor (Somente a vista)';
-      var bgEmail = tipoEmail === 'aprovado' ? '#15746E' : '#7c2d12';
+      // v4.43j: mapear tambem Reprovado pra ter template dedicado
+      var tipoEmail = 'a_vista';
+      if (decisaoFinal.indexOf('Aprovado') === 0 || decisaoFinal.indexOf('gerencia') >= 0) tipoEmail = 'aprovado';
+      else if (/reprov/i.test(decisaoFinal)) tipoEmail = 'reprovado';
+      var rotuloEmail = tipoEmail === 'aprovado' ? 'Enviar retorno ao vendedor (Aprovado)' :
+                        tipoEmail === 'reprovado' ? 'Enviar retorno ao vendedor (Reprovado)' :
+                        'Enviar retorno ao vendedor (Somente a vista)';
+      var bgEmail = tipoEmail === 'aprovado' ? '#15746E' : tipoEmail === 'reprovado' ? '#991B1B' : '#7c2d12';
       var Q = String.fromCharCode(39); // aspa simples
       var jsInline = 'if(typeof state!==' + Q + 'undefined' + Q + '&&state){state.openA=(window.D&&D.analyses||[]).find(function(x){return x.id===' + Q + a.id + Q + '||x._dbId===' + Q + a.id + Q + ';});} gerarEmailRetorno(' + Q + tipoEmail + Q + ')';
       h += '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed #D6D2CB;display:flex;gap:8px;flex-wrap:wrap">';
@@ -7086,7 +7091,12 @@ window.gerarEmailRetorno = function(tipo){
     if (tipo === "aprovado") {
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
       corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", identificamos um " + perfil + " perfil de crédito, considerando o tempo de atuação da empresa, o capital social apresentado e o baixo volume de pendências financeiras registradas." + blocoParecer + "\n\nDessa forma, aprovamos as seguintes condições comerciais:\n\nLimite de crédito: " + (limite || "R$ ______") + "\nPrazo de pagamento: " + (prazo || "14 dias") + "\n\nAs condições aprovadas poderão ser reavaliadas futuramente conforme a evolução do relacionamento comercial, o volume de compras e a pontualidade nos pagamentos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
+    } else if (tipo === "reprovado") {
+      // v4.43j: template de reprovacao com parecer
+      assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
+      corpo = "Prezado(s),\n\nApós análise das informações cadastrais e financeiras do cliente " + (cnpj ? "CNPJ " + cnpj : nome) + ", o Departamento de Crédito e Cobrança nao aprova, neste momento, a concessão de limite de crédito ou prazo para faturamento." + blocoParecer + "\n\nA reanálise poderá ser solicitada oportunamente, mediante apresentação de documentação complementar ou melhora do perfil de crédito do cliente.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     } else {
+      // a_vista (padrao pra qualquer coisa que nao seja aprovado ou reprovado)
       assunto = "Retorno de Análise de Crédito - " + (nome || cnpj);
       corpo = "Prezado,\n\nApós análise das informações cadastrais e financeiras do cliente" + (cnpj ? " CNPJ " + cnpj : "") + ", verificamos que o score de crédito apresentado encontra-se abaixo do parâmetro mínimo estabelecido em nossa política de concessão de crédito." + blocoParecer + "\n\nDessa forma, a recomendação do Departamento de Crédito e Cobrança é que as operações sejam realizadas exclusivamente na modalidade à vista, não sendo indicada, neste momento, a concessão de limite de crédito ou prazo para faturamento.\n\nContudo, caso haja interesse comercial em iniciar um relacionamento com o cliente, eventual concessão de limite e prazo deverá ser submetida previamente à aprovação da Gestão, que avaliará a operação em caráter de exceção, considerando os riscos envolvidos.\n\nPermanecemos à disposição para quaisquer esclarecimentos.\n\nAtenciosamente,\n\nFrancisco Elves C.\nDepartamento de Crédito e Cobrança";
     }
