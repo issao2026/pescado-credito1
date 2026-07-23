@@ -65,6 +65,20 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const body = await readJSON(req).catch(() => ({}));
 
+      // v4.44: normaliza anexos (metadata em dados.anexos_meta, base64 truncado se muito grande)
+      const anexosIn = Array.isArray(body.anexos) ? body.anexos : [];
+      const docsMeta = anexosIn.map(a => ({
+        n: a.name || 'arquivo',
+        c: a.mime || 'application/octet-stream',
+        size: a.size || 0,
+        ic: (a.mime||'').includes('pdf') ? 'pdf' : (a.mime||'').includes('image') ? 'img' : 'file',
+        st: 'anexado',
+        base64: a.base64 || null, // guarda inline (limite 4MB total garantido no frontend)
+      }));
+
+      // Dados a persistir - remove base64 gigante do echo (mas mantem em docs pra Elves ver)
+      const dadosSemBase64 = { ...body, anexos: docsMeta.map(d => ({ n: d.n, c: d.c, size: d.size, ic: d.ic, st: d.st })) };
+
       const row = {
         nome:          body.nome          || null,
         cpf_cnpj:      body.cnpj          || null,
@@ -82,7 +96,7 @@ export default async function handler(req, res) {
         decisao_final: body.final         || null,
         justificativa: body.justificativa || null,
         dt:            body.dt            || new Date().toISOString().slice(0, 10),
-        dados:         body,
+        dados:         { ...dadosSemBase64, docs: docsMeta }, // v4.44: docs com base64 pra download
       };
 
       const { data: created, error: createErr } = await sb
