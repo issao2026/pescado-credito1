@@ -331,6 +331,30 @@ async function enviar(){
   btn.disabled = true;
   btn.textContent = "Enviando...";
 
+  // v4.44: converter anexos em base64 (limite: 4MB total pra caber no payload JSON)
+  const anexosBase64 = [];
+  let totalBytes = 0;
+  for (const f of arquivos){
+    totalBytes += f.size;
+    if (totalBytes > 4 * 1024 * 1024){
+      err.innerHTML = '<div class="err-msg">Arquivos totalizam mais de 4MB. Envie por email ou reduza os arquivos.</div>';
+      btn.disabled = false;
+      btn.textContent = "Enviar solicitação";
+      return;
+    }
+    try {
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = () => rej(new Error('Falha ao ler ' + f.name));
+        r.readAsDataURL(f);
+      });
+      anexosBase64.push({ name: f.name, mime: f.type, size: f.size, base64: b64 });
+    } catch(e){
+      console.warn('[anexo]', e.message);
+    }
+  }
+
   const payload = {
     nome: cNome,
     tipo: document.getElementById("c-tipo").value,
@@ -342,6 +366,7 @@ async function enviar(){
     email_cliente: document.getElementById("c-email").value.trim(),
     telefone_cliente: document.getElementById("c-tel").value.trim(),
     observacoes: document.getElementById("c-obs").value.trim(),
+    anexos: anexosBase64, // v4.44: agora vai no payload
     status: "Aguardando análise",
     origem: "vendedor"
   };

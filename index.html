@@ -3813,6 +3813,17 @@ function pgLaudo() {
    if (temProtestoNao){
      apts.push({sev:'ok', texto:'CENPROT: sem protesto ativo', origem:'CENPROT'});
    }
+   // v4.44: DIVIDA APURADA
+   var divApurada = Number(a.dividas || d.dividas || 0);
+   if (divApurada > 0){
+     var divFmt = divApurada.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+     apts.push({sev:'critico', texto:'Cliente possui divida ativa de R$ ' + divFmt + ' — considerar impacto na decisao', origem:'Financeiro'});
+     // Divida >= valor pretendido: alerta reforcado
+     var valP = Number(a.valor||0);
+     if (valP > 0 && divApurada >= valP){
+       apts.unshift({sev:'critico', texto:'ALERTA: divida ativa (R$ '+divFmt+') supera ou iguala o valor pretendido (R$ '+valP.toLocaleString('pt-BR')+')', origem:'Financeiro'});
+     }
+   }
    // 5. Analise de CAPITAL SOCIAL vs VALOR PRETENDIDO
    var capital = a.capital_social || d.capital_social || (d.ocrData && (function(){
      var cs = null;
@@ -3951,6 +3962,42 @@ window.fmtLimiteBlur = function(el){
     if (isNaN(n) || n <= 0){ el.value = ''; return; }
     el.value = n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   } catch(e){}
+};
+
+// v4.44: baixa anexo em base64 do dados.docs
+window.baixarAnexo = function(fichaId, idx){
+  try {
+    var a = (window.D && D.analyses || []).find(function(x){ return x.id === fichaId; });
+    if (!a || !a.docs || !a.docs[idx]) { alert('Anexo nao encontrado'); return; }
+    var doc = a.docs[idx];
+    if (!doc.base64) { alert('Este anexo nao tem arquivo salvo (ficha antiga)'); return; }
+    var mime = doc.c || 'application/octet-stream';
+    var link = document.createElement('a');
+    link.href = 'data:' + mime + ';base64,' + doc.base64;
+    link.download = doc.n || 'anexo';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function(){ document.body.removeChild(link); }, 100);
+  } catch(e){ alert('Erro ao baixar: ' + e.message); }
+};
+
+// v4.44: lanca divida do cliente + persiste
+window.atualizarDivida = function(valor){
+  try {
+    var raw = String(valor||'').replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,'');
+    var n = parseFloat(raw);
+    if (isNaN(n) || n < 0) n = 0;
+    var id = window._curAnaliseId;
+    var a = (window.D && D.analyses || []).find(function(x){ return x.id === id; });
+    if (!a) return;
+    a.dividas = n;
+    if (typeof toast === 'function') toast('Divida: R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}));
+    var putId = a._dbId || a.id;
+    fetch('/api/fichas?id=' + encodeURIComponent(putId), {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ dividas: n })
+    }).catch(function(e){ console.warn('[atualizarDivida]', e.message); });
+  } catch(e){ console.warn('[atualizarDivida] erro:', e.message); }
 };
 
 // v4.43p: atualiza SO o visual do marcador grande em tempo real (sem persistir)
@@ -6242,6 +6289,17 @@ window.imprimirFichaAtual = function(){
     h += '<div style="font-family:Inter,sans-serif;font-size:13px;color:#191824">Status: <b>' + (a.docSt || "Pendente") + '</b>';
     if(a.docs && a.docs.length > 0) h += ' &middot; ' + a.docs.length + ' arquivo(s) anexado(s)';
     h += '</div>';
+    // v4.44: lista de anexos com botao de baixar
+    if (a.docs && a.docs.length > 0){
+      h += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">';
+      a.docs.forEach(function(doc, idx){
+        var ic = doc.ic === 'pdf' ? '📄' : doc.ic === 'img' ? '🖼️' : '📎';
+        var tam = doc.size ? ' <span style="color:#9AA;font-size:11px">(' + (doc.size/1024).toFixed(1) + ' KB)</span>' : '';
+        var btnBaixar = doc.base64 ? '<button onclick="window.baixarAnexo && window.baixarAnexo(\''+a.id+'\', '+idx+')" style="margin-left:auto;background:#012A2A;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">Baixar</button>' : '<span style="margin-left:auto;font-size:10px;color:#9AA">sem arquivo</span>';
+        h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#F5F7F6;border-radius:6px;font-size:12.5px">' + ic + ' ' + (doc.n || doc.name || 'arquivo') + tam + btnBaixar + '</div>';
+      });
+      h += '</div>';
+    }
     if(a.est) h += '<div style="font-family:Inter,sans-serif;font-size:12px;color:#9896A8;margin-top:4px">Limite sugerido pela IA: <b style="color:#191824">' + valorFmt(a.est) + '</b></div>';
     h += '</div>';
 
@@ -6253,6 +6311,28 @@ window.imprimirFichaAtual = function(){
       });
       h += '</div>';
     }
+
+    // ============ v4.44: OBSERVACOES DO VENDEDOR (readonly, se houver) ============
+    var obsVendedor = (a && (a.observacoes || (a.dados && a.dados.observacoes))) || '';
+    if (obsVendedor && obsVendedor.trim()){
+      h += '<div style="margin-top:18px;padding:14px 16px;background:#FEF7E0;border-left:3px solid #B45309;border-radius:8px">';
+      h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#B45309;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px">Observacoes do vendedor</div>';
+      h += '<div style="font-family:Inter,sans-serif;font-size:13px;color:#0A3332;line-height:1.5;white-space:pre-wrap">' + String(obsVendedor).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+      h += '</div>';
+    }
+    // ============ v4.44: DIVIDA APURADA ============
+    h += '<div style="margin-top:14px;padding:14px 16px;border:1px solid #E8E5DE;border-radius:8px;background:#fff">';
+    h += '<div style="font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;color:#9896A8;text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px">Divida — Valor apurado</div>';
+    h += '<div style="display:flex;gap:10px;align-items:center">';
+    h += '<span style="font-size:12px;color:#5F7573">R$</span>';
+    var divVal = a.dividas || (a.dados && a.dados.dividas) || '';
+    if (divVal && Number(divVal)){
+      divVal = Number(divVal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else { divVal = ''; }
+    h += '<input id="rep-divida" type="text" value="' + divVal + '" placeholder="Ex: 5.000,00 (deixe vazio se nao ha divida)" oninput="window.fmtLimiteInput && window.fmtLimiteInput(this)" onblur="window.fmtLimiteBlur && window.fmtLimiteBlur(this); window.atualizarDivida && window.atualizarDivida(this.value)" style="flex:1;padding:10px 12px;border:1px solid #D6DDDA;border-radius:6px;font-size:15px;font-family:Poppins,sans-serif;font-weight:700;color:#0A3332">';
+    h += '</div>';
+    h += '<div style="font-size:10.5px;color:#5F7573;margin-top:6px">Lance qualquer divida ativa do cliente (Serasa, CENPROT, interna) — vira apontamento critico</div>';
+    h += '</div>';
 
     // ============ DECISAO HUMANA - SEMPRE VISIVEL ============
     h += '<div style="margin-top:24px;padding:18px 20px;border:1px solid #191824;border-radius:10px;background:#fff">';
