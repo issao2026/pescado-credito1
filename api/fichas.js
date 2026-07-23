@@ -236,6 +236,11 @@ function toFrontend(row) {
     prazo_aprovado:  d.prazo_aprovado  ?? null,
     decisao_user:    d.decisao_user    ?? null,
     decisao_dt:      d.decisao_dt      ?? null,
+    // v4.44: expor observacoes e dividas do vendedor pra frontend
+    observacoes:     d.observacoes     ?? null,
+    dividas:         d.dividas         ?? null,
+    parecer_manual:  d.parecer_manual  ?? null,
+    resumo_executivo: d.resumo_executivo ?? null,
     dt:        row.dt        ?? d.dt        ?? row.created_at?.slice(0, 10) ?? "—",
 
     docs:      d.docs        ?? [],
